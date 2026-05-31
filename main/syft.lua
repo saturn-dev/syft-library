@@ -51,17 +51,21 @@ local function regToggle(dot, pill, getState)
 	table.insert(_toggleRefs, {dot=dot, pill=pill, getState=getState})
 end
 
+local _instantTween = TweenInfo.new(0)
 local function applyAcc(c)
 	T.ACC    = c
 	T.ACC_BG = Color3.fromRGB(math.floor(c.R*255*0.5), math.floor(c.G*255*0.5), math.floor(c.B*255*0.55))
-	for _, r in ipairs(_accentObjs)   do pcall(function() r.obj[r.prop] = c end) end
-	for _, r in ipairs(_accentBGObjs) do pcall(function() r.obj[r.prop] = T.ACC_BG end) end
-	-- live-update any ON toggles
+	for _, r in ipairs(_accentObjs) do
+		pcall(function() TS:Create(r.obj, _instantTween, {[r.prop]=c}):Play() end)
+	end
+	for _, r in ipairs(_accentBGObjs) do
+		pcall(function() TS:Create(r.obj, _instantTween, {[r.prop]=T.ACC_BG}):Play() end)
+	end
 	for _, r in ipairs(_toggleRefs) do
 		pcall(function()
 			if r.getState() then
-				r.dot.BackgroundColor3  = c
-				r.pill.BackgroundColor3 = T.ACC_BG
+				TS:Create(r.dot,  _instantTween, {BackgroundColor3=c}):Play()
+				TS:Create(r.pill, _instantTween, {BackgroundColor3=T.ACC_BG}):Play()
 			end
 		end)
 	end
@@ -854,6 +858,12 @@ function Lib:AddTab(cfg)
 				end,
 				GetValue = function()
 					return isMulti and multiSelected or selected
+				end,
+				SetOptions = function(_, newOpts)
+					c.Options = newOpts or {}
+					local first = newOpts and newOpts[1] or ""
+					selected = first
+					selLbl.Text = first
 				end,
 			}
 		end
