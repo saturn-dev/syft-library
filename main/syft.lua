@@ -1,25 +1,3 @@
---[[
-	syft.wtf UI Library v3
-	
-	USAGE:
-		local Syft = loadstring(game:HttpGet("RAW_URL"))()
-		local Win = Syft:CreateWindow({ Title = "syft.wtf" })
-		Win:AddCategory("GENERAL")
-		local Tab = Win:AddTab({ Title = "Local Player", Icon = "rbxassetid://134558401488718", Description = "...", SubTabs = {"General","Game","Misc"} })
-		Tab.General:AddToggle({ Title="X", Description="Y", Default=false, Callback=function(v) end })
-		Tab.General:AddSlider({ Title="X", Min=0, Max=100, Default=16, Callback=function(v) end })
-		Tab.General:AddButton({ Title="X", Description="Y", Callback=function() end })
-		Tab.General:AddDropdown({ Title="X", Options={"A","B"}, Default="A", Callback=function(v) end })
-		Tab.General:AddKeybind({ Title="Toggle UI", Default=Enum.KeyCode.RightShift, Callback=function(key) end })
-		Tab.General:AddTextbox({ Title="Name", Placeholder="Enter name...", Default="", Callback=function(text, pressedEnter) end })
-		Tab.General:AddDivider()                      -- plain line
-		Tab.General:AddDivider({ Title="Section" })   -- line with label
-		Win:Toast({ Title="Hello", Message="world", Duration=3 })
-		Win:SetMapVisible(true)
-		Win:SetAccentColor(Color3.fromRGB(110,112,182))
-		Win:SetKeyExpiry("6d 24h")
-]]
-
 local TS  = game:GetService("TweenService")
 local UIS = game:GetService("UserInputService")
 local PL  = game:GetService("Players")
