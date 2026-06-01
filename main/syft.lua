@@ -280,14 +280,47 @@ function Lib:CreateWindow(cfg)
 	self:_BuildMap()
 	if cfg.Map then self:SetMapVisible(true) end
 
+	self._unlockMouse = false
+
+	local function applyMouseLock()
+		if sg.Enabled and self._unlockMouse then
+			UIS.MouseBehavior = Enum.MouseBehavior.Default
+			UIS.MouseIconEnabled = true
+		end
+	end
+
+	local function restoreMouseLock()
+		if self._unlockMouse then
+			UIS.MouseBehavior = Enum.MouseBehavior.LockCenter
+		end
+	end
+
 	UIS.InputBegan:Connect(function(i, gp)
 		if gp then return end
 		if i.KeyCode == self._keybind then
 			sg.Enabled = not sg.Enabled
+			if sg.Enabled then
+				applyMouseLock()
+			else
+				restoreMouseLock()
+			end
 		end
 	end)
 
+	self._applyMouseLock   = applyMouseLock
+	self._restoreMouseLock = restoreMouseLock
+
 	return self
+end
+
+function Lib:SetMouseUnlock(enabled)
+	self._unlockMouse = enabled
+	if self._sg and self._sg.Enabled then
+		if enabled then
+			UIS.MouseBehavior = Enum.MouseBehavior.Default
+			UIS.MouseIconEnabled = true
+		end
+	end
 end
 
 function Lib:SetAccentColor(c)
