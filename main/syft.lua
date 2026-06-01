@@ -925,9 +925,9 @@ function Lib:AddTab(cfg)
 				[Enum.UserInputType.MouseButton1] = "LMB",
 				[Enum.UserInputType.MouseButton2] = "RMB",
 				[Enum.UserInputType.MouseButton3] = "MMB",
-				[Enum.UserInputType.MouseButton4] = "Mouse4",
-				[Enum.UserInputType.MouseButton5] = "Mouse5",
 			}
+			pcall(function() mouseNames[Enum.UserInputType.MouseButton4] = "Mouse4" end)
+			pcall(function() mouseNames[Enum.UserInputType.MouseButton5] = "Mouse5" end)
 
 			local function bindName(k)
 				if mouseNames[k] then return mouseNames[k] end
