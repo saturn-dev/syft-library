@@ -14,6 +14,9 @@ local T = {
 	MUTED   = Color3.fromRGB(65,64,75),
 }
 
+local _TQ  = TweenInfo.new(0.2,  Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+local _TQS = TweenInfo.new(0.3,  Enum.EasingStyle.Back,  Enum.EasingDirection.Out)
+
 local _accentObjs   = {}
 local _accentBGObjs = {}
 local _toggleRefs   = {}
@@ -58,8 +61,8 @@ local function applyAcc(c)
 end
 
 local function tw(obj, t, props) TS:Create(obj, t, props):Play() end
-local TQ  = TweenInfo.new(0.18, Enum.EasingStyle.Quad,  Enum.EasingDirection.Out)
-local TQS = TweenInfo.new(0.28, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+local TQ  = TweenInfo.new(0.2,  Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+local TQS = TweenInfo.new(0.3,  Enum.EasingStyle.Back,  Enum.EasingDirection.Out)
 
 local function corner(p, r)
 	local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, r or 6); c.Parent = p; return c
@@ -233,9 +236,9 @@ function Lib:CreateWindow(cfg)
 	closeBtn.BackgroundTransparency=1; closeBtn.BorderSizePixel=0
 	closeBtn.AnchorPoint=Vector2.new(1,0.5); closeBtn.Position=UDim2.new(1,-12,0.5,0)
 	closeBtn.Size=UDim2.new(0,20,0,20); closeBtn.Image="rbxassetid://88930748781568"
-	closeBtn.ImageColor3=T.MUTED; closeBtn.ZIndex=4
-	closeBtn.MouseEnter:Connect(function() tw(closeBtn,TQ,{ImageColor3=T.TEXT}) end)
-	closeBtn.MouseLeave:Connect(function() tw(closeBtn,TQ,{ImageColor3=T.MUTED}) end)
+	TS:Create(closeBtn,_TQ,{ImageColor3=T.MUTED}):Play(); closeBtn.ZIndex=4
+	closeBtn.MouseEnter:Connect(function() TS:Create(closeBtn,_TQ,{ImageColor3=T.TEXT}):Play() end)
+	closeBtn.MouseLeave:Connect(function() TS:Create(closeBtn,_TQ,{ImageColor3=T.MUTED}):Play() end)
 	closeBtn.MouseButton1Click:Connect(function() sg.Enabled=false end)
 
 	if cfg.Player ~= false then
@@ -363,17 +366,17 @@ function Lib:Toast(cfg)
 	regAcc(progFill,"BackgroundColor3")
 	corner(progFill,2)
 
-	toast.Position = UDim2.new(1,320,0,0)
-	tw(toast, TweenInfo.new(0.35, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Size=UDim2.new(1,0,0,62), Position=UDim2.new(0,0,0,0)})
-	task.delay(0.35, function()
-		tw(progFill, TweenInfo.new(dur, Enum.EasingStyle.Linear), {Size=UDim2.new(0,0,1,0)})
+	toast.Position = UDim2.new(1,340,0,0)
+	TS:Create(toast, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size=UDim2.new(1,0,0,62), Position=UDim2.new(0,0,0,0)}):Play()
+	task.delay(0.45, function()
+		TS:Create(progFill, TweenInfo.new(dur, Enum.EasingStyle.Linear), {Size=UDim2.new(0,0,1,0)}):Play()
 	end)
 	task.delay(dur + 0.35, function()
 		if not toast or not toast.Parent then return end
-		tw(toast, TweenInfo.new(0.28, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Position=UDim2.new(1,320,0,0)})
+		TS:Create(toast, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Position=UDim2.new(1,340,0,0)}):Play()
 		task.delay(0.30, function()
 			if not toast or not toast.Parent then return end
-			tw(toast, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size=UDim2.new(1,0,0,0)})
+			TS:Create(toast, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size=UDim2.new(1,0,0,0)}):Play()
 			task.delay(0.22, function() pcall(function() toast:Destroy() end) end)
 		end)
 	end)
@@ -438,7 +441,7 @@ function Lib:AddTab(cfg)
 			c=c or {}
 			self._itemCt=self._itemCt+1
 			local frame=Instance.new("Frame",self._scroll)
-			frame.BackgroundColor3=T.BG; frame.BorderSizePixel=0
+			TS:Create(frame,_TQ,{BackgroundColor3=T.BG}):Play(); frame.BorderSizePixel=0
 			frame.LayoutOrder=self._itemCt; frame.Size=UDim2.new(1,0,0,64); frame.ZIndex=3
 			corner(frame,6)
 
@@ -465,9 +468,10 @@ function Lib:AddTab(cfg)
 			local function setToggle(v)
 				toggled = v
 				local onPos=UDim2.new(1,-22,0.5,0); local offPos=UDim2.new(0,4,0.5,0)
-				tw(dot, TQS,{Position=v and onPos or offPos, BackgroundColor3=v and T.ACC or T.MUTED})
-				tw(pill,TQS,{BackgroundColor3=v and T.ACC_BG or T.BG3})
-				tw(titleLbl,TQ,{TextColor3=v and T.TEXT or T.MUTED})
+				TS:Create(dot,_TQS,{Position=v and onPos or offPos}):Play()
+				dot.BackgroundColor3=v and T.ACC or T.MUTED
+				pill.BackgroundColor3=v and T.ACC_BG or T.BG3
+				titleLbl.TextColor3=v and T.TEXT or T.MUTED
 				if c.Callback then c.Callback(v) end
 			end
 
@@ -475,8 +479,8 @@ function Lib:AddTab(cfg)
 
 			pill.Activated:Connect(function() setToggle(not toggled) end)
 
-			frame.MouseEnter:Connect(function() tw(frame,TQ,{BackgroundColor3=Color3.fromRGB(20,20,26)}) end)
-			frame.MouseLeave:Connect(function() tw(frame,TQ,{BackgroundColor3=T.BG}) end)
+			frame.MouseEnter:Connect(function() TS:Create(frame,_TQ,{BackgroundColor3=Color3.fromRGB(20,20,26)}):Play() end)
+			frame.MouseLeave:Connect(function() TS:Create(frame,_TQ,{BackgroundColor3=T.BG}):Play() end)
 
 			local cfgKey="toggle_"..stName.."_"..self._itemCt
 		win:_regConfig(cfgKey, function() return toggled end, function(v) setToggle(v) end)
@@ -487,7 +491,7 @@ function Lib:AddTab(cfg)
 			c=c or {}
 			self._itemCt=self._itemCt+1
 			local frame=Instance.new("Frame",self._scroll)
-			frame.BackgroundColor3=T.BG; frame.BorderSizePixel=0
+			TS:Create(frame,_TQ,{BackgroundColor3=T.BG}):Play(); frame.BorderSizePixel=0
 			frame.LayoutOrder=self._itemCt; frame.Size=UDim2.new(1,0,0,64); frame.ZIndex=3
 			corner(frame,6)
 
@@ -526,8 +530,8 @@ function Lib:AddTab(cfg)
 				local ap=track.AbsolutePosition.X; local as=track.AbsoluteSize.X
 				local pct=math.clamp((x-ap)/as,0,1)
 				local v=math.floor(minV+(maxV-minV)*pct)
-				fill.Size=UDim2.new(pct,0,1,0)
-				handle.Position=UDim2.new(pct,0,0.5,0)
+				TS:Create(fill,TweenInfo.new(0.08,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{Size=UDim2.new(pct,0,1,0)}):Play()
+				TS:Create(handle,TweenInfo.new(0.08,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{Position=UDim2.new(pct,0,0.5,0)}):Play()
 				valLbl.Text=tostring(v); curV=v
 				if c.Callback then c.Callback(v) end
 			end
@@ -535,14 +539,14 @@ function Lib:AddTab(cfg)
 			track.InputBegan:Connect(function(i)
 				if i.UserInputType==Enum.UserInputType.MouseButton1 then
 					dragging=true
-					tw(handle,TQ,{Size=UDim2.new(0,16,0,16)})
+					TS:Create(handle,_TQ,{Size=UDim2.new(0,16,0,16)}):Play()
 					updateFromX(i.Position.X)
 				end
 			end)
 			UIS.InputEnded:Connect(function(i)
 				if i.UserInputType==Enum.UserInputType.MouseButton1 and dragging then
 					dragging=false
-					tw(handle,TQ,{Size=UDim2.new(0,12,0,12)})
+					TS:Create(handle,_TQ,{Size=UDim2.new(0,12,0,12)}):Play()
 				end
 			end)
 			UIS.InputChanged:Connect(function(i)
@@ -552,8 +556,8 @@ function Lib:AddTab(cfg)
 				end
 			end)
 
-			frame.MouseEnter:Connect(function() tw(frame,TQ,{BackgroundColor3=Color3.fromRGB(20,20,26)}) end)
-			frame.MouseLeave:Connect(function() tw(frame,TQ,{BackgroundColor3=T.BG}) end)
+			frame.MouseEnter:Connect(function() TS:Create(frame,_TQ,{BackgroundColor3=Color3.fromRGB(20,20,26)}):Play() end)
+			frame.MouseLeave:Connect(function() TS:Create(frame,_TQ,{BackgroundColor3=T.BG}):Play() end)
 
 			local sldrKey="slider_"..stName.."_"..self._itemCt
 			win:_regConfig(sldrKey, function() return curV end, function(v)
@@ -570,7 +574,7 @@ function Lib:AddTab(cfg)
 			c=c or {}
 			self._itemCt=self._itemCt+1
 			local btn=Instance.new("TextButton",self._scroll)
-			btn.BackgroundColor3=T.BG; btn.BorderSizePixel=0
+			TS:Create(btn,_TQ,{BackgroundColor3=T.BG}):Play(); btn.BorderSizePixel=0
 			btn.LayoutOrder=self._itemCt; btn.Size=UDim2.new(1,0,0,64)
 			btn.Text=""; btn.AutoButtonColor=false; btn.ZIndex=3
 			corner(btn,6)
@@ -581,10 +585,10 @@ function Lib:AddTab(cfg)
 				newImg(btn,{AnchorPoint=Vector2.new(1,0.5),Position=UDim2.new(1,-14,0.5,0),Size=UDim2.new(0,26,0,26),Image=c.Icon,ImageColor3=T.MUTED,ZIndex=4})
 			end
 
-			btn.MouseEnter:Connect(function() tw(btn,TQ,{BackgroundColor3=T.BG3}) end)
-			btn.MouseLeave:Connect(function() tw(btn,TQ,{BackgroundColor3=T.BG}) end)
-			btn.MouseButton1Down:Connect(function() tw(btn,TweenInfo.new(0.08),{BackgroundColor3=Color3.fromRGB(30,30,40)}) end)
-			btn.MouseButton1Up:Connect(function() tw(btn,TQ,{BackgroundColor3=T.BG3}) end)
+			btn.MouseEnter:Connect(function() TS:Create(btn,_TQ,{BackgroundColor3=T.BG3}):Play() end)
+			btn.MouseLeave:Connect(function() TS:Create(btn,_TQ,{BackgroundColor3=T.BG}):Play() end)
+			btn.MouseButton1Down:Connect(function() TS:Create(btn,TweenInfo.new(0.08),{BackgroundColor3=Color3.fromRGB(30,30,40)}):Play() end)
+			btn.MouseButton1Up:Connect(function() TS:Create(btn,_TQ,{BackgroundColor3=T.BG3}):Play() end)
 			btn.Activated:Connect(function() if c.Callback then c.Callback() end end)
 
 			return {Frame=btn}
@@ -595,7 +599,7 @@ function Lib:AddTab(cfg)
 			self._itemCt=self._itemCt+1
 			local isMulti = c.SelectMode == true
 			local frame=Instance.new("Frame",self._scroll)
-			frame.BackgroundColor3=T.BG; frame.BorderSizePixel=0
+			TS:Create(frame,_TQ,{BackgroundColor3=T.BG}):Play(); frame.BorderSizePixel=0
 			frame.LayoutOrder=self._itemCt; frame.Size=UDim2.new(1,0,0,64)
 			frame.ZIndex=3; frame.ClipsDescendants=false
 			corner(frame,6)
@@ -649,17 +653,17 @@ function Lib:AddTab(cfg)
 			local function closeDD()
 				if optContainer then
 					local oc=optContainer; optContainer=nil
-					tw(oc,TQ,{Size=UDim2.new(0,165,0,0)})
+					TS:Create(oc,TweenInfo.new(0.15,Enum.EasingStyle.Quad,Enum.EasingDirection.In),{Size=UDim2.new(0,165,0,0)}):Play()
 					task.delay(0.22,function() pcall(function() oc:Destroy() end) end)
 				end
-				tw(arrowImg,TQ,{Rotation=0})
+				TS:Create(arrowImg,_TQ,{Rotation=0}):Play()
 				isOpen=false
 			end
 
 			dd.Activated:Connect(function()
 				if isOpen then closeDD(); return end
 				isOpen=true
-				tw(arrowImg,TQ,{Rotation=180})
+				TS:Create(arrowImg,_TQ,{Rotation=180}):Play()
 
 				local opts=c.Options or {}
 				local optW=165; local optRowH=32
@@ -716,20 +720,21 @@ function Lib:AddTab(cfg)
 					end
 
 					ob.MouseEnter:Connect(function()
-						tw(ob,TQ,{BackgroundTransparency=0.5,BackgroundColor3=Color3.fromRGB(44,44,60)})
-						tw(ol,TQ,{TextColor3=T.TEXT})
+					ob.MouseEnter:Connect(function()
+						TS:Create(ob,_TQ,{BackgroundTransparency=0.5,BackgroundColor3=Color3.fromRGB(44,44,60)}):Play()
+						TS:Create(ol,_TQ,{TextColor3=T.TEXT}):Play()
 					end)
 					ob.MouseLeave:Connect(function()
+					ob.MouseLeave:Connect(function()
 						local s2=isMulti and multiSelected[opt] or (not isMulti and opt==selected)
-						tw(ob,TQ,{BackgroundTransparency=s2 and 0.6 or 1})
-						tw(ol,TQ,{TextColor3=s2 and T.ACC or T.TEXT})
+						ol.TextColor3=s2 and T.ACC or T.TEXT
 					end)
 					ob.Activated:Connect(function()
 						if isMulti then
 							multiSelected[opt]=not multiSelected[opt]
 							local s2=multiSelected[opt]
-							tw(ob,TQ,{BackgroundTransparency=s2 and 0.6 or 1})
-							tw(ol,TQ,{TextColor3=s2 and T.ACC or T.TEXT})
+							ob.BackgroundTransparency=s2 and 0.6 or 1
+							ol.TextColor3=s2 and T.ACC or T.TEXT
 							if checkLbl then checkLbl.Text=s2 and "✓" or "" end
 							selLbl.Text=multiLabel()
 							if c.Callback then c.Callback(multiSelected) end
@@ -741,8 +746,8 @@ function Lib:AddTab(cfg)
 									if ch:IsA("TextButton") then
 										local chOl=ch:FindFirstChildOfClass("TextLabel")
 										local cur=chOl and chOl.Text==opt
-										tw(ch,TQ,{BackgroundTransparency=cur and 0.6 or 1})
-										if chOl then tw(chOl,TQ,{TextColor3=cur and T.ACC or T.TEXT}) end
+										ch.BackgroundTransparency=cur and 0.6 or 1
+										if chOl then chOl.TextColor3=cur and T.ACC or T.TEXT end
 									end
 								end
 							end
@@ -760,12 +765,12 @@ function Lib:AddTab(cfg)
 					doneBtn.TextColor3=T.ACC; doneBtn.AutoButtonColor=false
 					doneBtn.ZIndex=9001; doneBtn.LayoutOrder=#opts+1
 					corner(doneBtn,4)
-					doneBtn.MouseEnter:Connect(function() tw(doneBtn,TQ,{BackgroundColor3=T.ACC,TextColor3=T.BG}) end)
-					doneBtn.MouseLeave:Connect(function() tw(doneBtn,TQ,{BackgroundColor3=T.ACC_BG,TextColor3=T.ACC}) end)
+					doneBtn.MouseEnter:Connect(function() TS:Create(doneBtn,_TQ,{BackgroundColor3=T.ACC,TextColor3=T.BG}):Play() end)
+					doneBtn.MouseLeave:Connect(function() TS:Create(doneBtn,_TQ,{BackgroundColor3=T.ACC_BG,TextColor3=T.ACC}):Play() end)
 					doneBtn.Activated:Connect(function() closeDD() end)
 				end
 
-				tw(optContainer,TQS,{Size=UDim2.new(0,optW,0,dropH)})
+				TS:Create(optContainer,TweenInfo.new(0.25,Enum.EasingStyle.Back,Enum.EasingDirection.Out),{Size=UDim2.new(0,optW,0,dropH)}):Play()
 			end)
 
 			UIS.InputBegan:Connect(function(i)
@@ -775,8 +780,8 @@ function Lib:AddTab(cfg)
 				end
 			end)
 
-			frame.MouseEnter:Connect(function() tw(frame,TQ,{BackgroundColor3=Color3.fromRGB(20,20,26)}) end)
-			frame.MouseLeave:Connect(function() tw(frame,TQ,{BackgroundColor3=T.BG}) end)
+			frame.MouseEnter:Connect(function() TS:Create(frame,_TQ,{BackgroundColor3=Color3.fromRGB(20,20,26)}):Play() end)
+			frame.MouseLeave:Connect(function() TS:Create(frame,_TQ,{BackgroundColor3=T.BG}):Play() end)
 
 			local cfgKey="dropdown_"..stName.."_"..self._itemCt
 			win:_regConfig(cfgKey,
@@ -810,7 +815,7 @@ function Lib:AddTab(cfg)
 			c=c or {}
 			self._itemCt=self._itemCt+1
 			local frame=Instance.new("Frame",self._scroll)
-			frame.BackgroundColor3=T.BG; frame.BorderSizePixel=0
+			TS:Create(frame,_TQ,{BackgroundColor3=T.BG}):Play(); frame.BorderSizePixel=0
 			frame.LayoutOrder=self._itemCt; frame.Size=UDim2.new(1,0,0,64); frame.ZIndex=3
 			corner(frame,6)
 
@@ -835,20 +840,20 @@ function Lib:AddTab(cfg)
 			box.ZIndex=6; box.TextXAlignment=Enum.TextXAlignment.Left
 
 			box.Focused:Connect(function()
-				tw(inputBg,TQ,{BackgroundColor3=Color3.fromRGB(30,30,42)})
+				inputBg.BackgroundColor3=Color3.fromRGB(30,30,42)
 				local stroke=Instance.new("UIStroke",inputBg)
 				stroke.Color=T.ACC; stroke.Thickness=1; stroke.ApplyStrokeMode=Enum.ApplyStrokeMode.Border
 				regAcc(stroke,"Color")
 			end)
 			box.FocusLost:Connect(function(enter)
-				tw(inputBg,TQ,{BackgroundColor3=T.BG3})
+				inputBg.BackgroundColor3=T.BG3
 				local stroke=inputBg:FindFirstChildOfClass("UIStroke")
 				if stroke then stroke:Destroy() end
 				if c.Callback then c.Callback(box.Text, enter) end
 			end)
 
-			frame.MouseEnter:Connect(function() tw(frame,TQ,{BackgroundColor3=Color3.fromRGB(20,20,26)}) end)
-			frame.MouseLeave:Connect(function() tw(frame,TQ,{BackgroundColor3=T.BG}) end)
+			frame.MouseEnter:Connect(function() TS:Create(frame,_TQ,{BackgroundColor3=Color3.fromRGB(20,20,26)}):Play() end)
+			frame.MouseLeave:Connect(function() TS:Create(frame,_TQ,{BackgroundColor3=T.BG}):Play() end)
 
 			return {
 				GetValue = function() return box.Text end,
@@ -892,7 +897,7 @@ function Lib:AddTab(cfg)
 			c=c or {}
 			self._itemCt=self._itemCt+1
 			local frame=Instance.new("Frame",self._scroll)
-			frame.BackgroundColor3=T.BG; frame.BorderSizePixel=0
+			TS:Create(frame,_TQ,{BackgroundColor3=T.BG}):Play(); frame.BorderSizePixel=0
 			frame.LayoutOrder=self._itemCt; frame.Size=UDim2.new(1,0,0,64); frame.ZIndex=3
 			corner(frame,6)
 
@@ -903,7 +908,7 @@ function Lib:AddTab(cfg)
 			local listening = false
 
 			local keyBtn=Instance.new("TextButton",frame)
-			keyBtn.BackgroundColor3=T.BG3; keyBtn.BorderSizePixel=0
+			TS:Create(keyBtn,_TQ,{BackgroundColor3=T.BG3}):Play(); keyBtn.BorderSizePixel=0
 			keyBtn.AnchorPoint=Vector2.new(1,0.5); keyBtn.Position=UDim2.new(1,-14,0.5,0)
 			keyBtn.Size=UDim2.new(0,120,0,32); keyBtn.Font=Enum.Font.GothamMedium
 			keyBtn.TextSize=13; keyBtn.AutoButtonColor=false; keyBtn.ZIndex=5
@@ -919,7 +924,7 @@ function Lib:AddTab(cfg)
 			keyBtn.Activated:Connect(function()
 				if listening then return end
 				listening=true
-				tw(keyBtn,TQ,{BackgroundColor3=T.ACC_BG})
+				TS:Create(keyBtn,_TQ,{BackgroundColor3=T.ACC_BG}):Play()
 				keyBtn.Text="..."
 				keyBtn.TextColor3=T.ACC
 			end)
@@ -930,7 +935,7 @@ function Lib:AddTab(cfg)
 					curKey=i.KeyCode
 					listening=false
 					keyBtn.Text=keyName(curKey)
-					tw(keyBtn,TQ,{BackgroundColor3=T.BG3})
+					TS:Create(keyBtn,_TQ,{BackgroundColor3=T.BG3}):Play()
 					keyBtn.TextColor3=T.TEXT
 					if c.IsToggleKey and win then
 						win._keybind=curKey
@@ -939,8 +944,8 @@ function Lib:AddTab(cfg)
 				end
 			end)
 
-			frame.MouseEnter:Connect(function() tw(frame,TQ,{BackgroundColor3=Color3.fromRGB(20,20,26)}) end)
-			frame.MouseLeave:Connect(function() tw(frame,TQ,{BackgroundColor3=T.BG}) end)
+			frame.MouseEnter:Connect(function() TS:Create(frame,_TQ,{BackgroundColor3=Color3.fromRGB(20,20,26)}):Play() end)
+			frame.MouseLeave:Connect(function() TS:Create(frame,_TQ,{BackgroundColor3=T.BG}):Play() end)
 
 			return {
 				GetValue=function() return curKey end,
@@ -959,15 +964,15 @@ function Lib:AddTab(cfg)
 	navBtn.Activated:Connect(function() win:_SelectTab(tab) end)
 	navBtn.MouseEnter:Connect(function()
 		if win._active~=tab then
-			tw(navBtn,TQ,{BackgroundTransparency=0.85,BackgroundColor3=T.BG3})
-			tw(navLbl,TQ,{TextColor3=T.TEXT})
+			TS:Create(navBtn,_TQ,{BackgroundTransparency=0.85,BackgroundColor3=T.BG3}):Play()
+			TS:Create(navLbl,_TQ,{TextColor3=T.TEXT}):Play()
 			navIcon.ImageColor3=T.ACC
 		end
 	end)
 	navBtn.MouseLeave:Connect(function()
 		if win._active~=tab then
-			tw(navBtn,TQ,{BackgroundTransparency=1})
-			tw(navLbl,TQ,{TextColor3=T.MUTED})
+			TS:Create(navBtn,_TQ,{BackgroundTransparency=1}):Play()
+			TS:Create(navLbl,_TQ,{TextColor3=T.MUTED}):Play()
 			navIcon.ImageColor3=T.MUTED
 		end
 	end)
@@ -981,13 +986,13 @@ function Lib:_SelectTab(tab)
 	if self._active then
 		local p=self._active
 		p._frame.Visible=false
-		tw(p._navBtn,TQ,{BackgroundTransparency=1,BackgroundColor3=T.BG3})
-		tw(p._navLbl,TQ,{TextColor3=T.MUTED})
+		TS:Create(p._navBtn,_TQ,{BackgroundTransparency=1}):Play()
+		TS:Create(p._navLbl,_TQ,{TextColor3=T.MUTED}):Play()
 		p._navIcon.ImageColor3=T.MUTED
 	end
 	self._active=tab; tab._frame.Visible=true
-	tw(tab._navBtn,TQ,{BackgroundTransparency=0,BackgroundColor3=T.BG3})
-	tw(tab._navLbl,TQ,{TextColor3=T.TEXT})
+	TS:Create(tab._navBtn,_TQ,{BackgroundTransparency=0,BackgroundColor3=T.BG3}):Play()
+	TS:Create(tab._navLbl,_TQ,{TextColor3=T.TEXT}):Play()
 	tab._navIcon.ImageColor3=T.ACC
 	self._hTitle.Text=tab._title; self._hDesc.Text=tab._desc
 	for _,child in ipairs(self._stBar:GetChildren()) do if child:IsA("TextButton") then child:Destroy() end end
@@ -1014,17 +1019,17 @@ function Lib:_BuildSTBtn(tab,st,order)
 		for _,child in ipairs(self._stBar:GetChildren()) do
 			if child:IsA("TextButton") then
 				local ca=(child.Name=="STBtn_"..st._name)
-				tw(child,TQ,{TextColor3=ca and T.TEXT or T.MUTED})
+				TS:Create(child,_TQ,{TextColor3=ca and T.TEXT or T.MUTED}):Play()
 				local l=child:FindFirstChildOfClass("Frame")
 				if l then
 					l.BackgroundColor3=T.ACC
-					tw(l,TQ,{BackgroundTransparency=ca and 0 or 1})
+					TS:Create(l,_TQ,{BackgroundTransparency=ca and 0 or 1}):Play()
 				end
 			end
 		end
 	end)
-	btn.MouseEnter:Connect(function() if tab._activeST~=st then tw(btn,TQ,{TextColor3=T.TEXT}) end end)
-	btn.MouseLeave:Connect(function() if tab._activeST~=st then tw(btn,TQ,{TextColor3=T.MUTED}) end end)
+	btn.MouseEnter:Connect(function() if tab._activeST~=st then TS:Create(btn,_TQ,{TextColor3=T.TEXT}):Play() end end)
+	btn.MouseLeave:Connect(function() if tab._activeST~=st then TS:Create(btn,_TQ,{TextColor3=T.MUTED}):Play() end end)
 end
 
 function Lib:_BuildMap()
