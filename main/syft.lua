@@ -15,7 +15,7 @@ local T = {
 }
 
 local _TQ  = TweenInfo.new(0.2,  Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
-local _TQS = TweenInfo.new(0.3,  Enum.EasingStyle.Back,  Enum.EasingDirection.Out)
+local _TQS = TweenInfo.new(0.3,  Enum.EasingStyle.Quint,  Enum.EasingDirection.Out)
 
 local _accentObjs   = {}
 local _accentBGObjs = {}
@@ -62,7 +62,7 @@ end
 
 local function tw(obj, t, props) TS:Create(obj, t, props):Play() end
 local TQ  = TweenInfo.new(0.2,  Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
-local TQS = TweenInfo.new(0.3,  Enum.EasingStyle.Back,  Enum.EasingDirection.Out)
+local TQS = TweenInfo.new(0.3,  Enum.EasingStyle.Quint,  Enum.EasingDirection.Out)
 
 local function corner(p, r)
 	local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, r or 6); c.Parent = p; return c
@@ -367,7 +367,7 @@ function Lib:Toast(cfg)
 	corner(progFill,2)
 
 	toast.Position = UDim2.new(1,340,0,0)
-	TS:Create(toast, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size=UDim2.new(1,0,0,62), Position=UDim2.new(0,0,0,0)}):Play()
+	TS:Create(toast, TweenInfo.new(0.45, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Size=UDim2.new(1,0,0,62), Position=UDim2.new(0,0,0,0)}):Play()
 	task.delay(0.45, function()
 		TS:Create(progFill, TweenInfo.new(dur, Enum.EasingStyle.Linear), {Size=UDim2.new(0,0,1,0)}):Play()
 	end)
@@ -563,6 +563,7 @@ function Lib:AddTab(cfg)
 			win:_regConfig(sldrKey, function() return curV end, function(v)
 				curV=math.clamp(v,minV,maxV); local p=(curV-minV)/(maxV-minV)
 				fill.Size=UDim2.new(p,0,1,0); handle.Position=UDim2.new(p,0,0.5,0); valLbl.Text=tostring(curV)
+				if c.Callback then c.Callback(curV) end
 			end)
 			return {
 				SetValue=function(_,v) curV=math.clamp(v,minV,maxV); local p=(curV-minV)/(maxV-minV); fill.Size=UDim2.new(p,0,1,0); handle.Position=UDim2.new(p,0,0.5,0); valLbl.Text=tostring(curV) end,
@@ -769,7 +770,7 @@ function Lib:AddTab(cfg)
 					doneBtn.Activated:Connect(function() closeDD() end)
 				end
 
-				TS:Create(optContainer,TweenInfo.new(0.25,Enum.EasingStyle.Back,Enum.EasingDirection.Out),{Size=UDim2.new(0,optW,0,dropH)}):Play()
+				TS:Create(optContainer,TweenInfo.new(0.25,Enum.EasingStyle.Quint,Enum.EasingDirection.Out),{Size=UDim2.new(0,optW,0,dropH)}):Play()
 			end)
 
 			UIS.InputBegan:Connect(function(i)
@@ -786,8 +787,13 @@ function Lib:AddTab(cfg)
 			win:_regConfig(cfgKey,
 				function() return isMulti and multiSelected or selected end,
 				function(v)
-					if isMulti and type(v)=="table" then multiSelected=v; selLbl.Text=multiLabel()
-					elseif not isMulti and type(v)=="string" then selected=v; selLbl.Text=v end
+					if isMulti and type(v)=="table" then
+						multiSelected=v; selLbl.Text=multiLabel()
+						if c.Callback then c.Callback(multiSelected) end
+					elseif not isMulti and type(v)=="string" then
+						selected=v; selLbl.Text=v
+						if c.Callback then c.Callback(selected) end
+					end
 				end)
 			return {
 				SetValue = function(_,v)
@@ -1205,6 +1211,11 @@ function Lib:SaveConfig(name)
 	if not self._configItems then return false end
 	local data={}
 	for k,v in pairs(self._configItems) do local ok2,val=pcall(v.get); if ok2 then data[k]=val end end
+	data["__scale"]=self._scale or 1
+	local ac=T.ACC
+	data["__accR"]=math.floor(ac.R*255)
+	data["__accG"]=math.floor(ac.G*255)
+	data["__accB"]=math.floor(ac.B*255)
 	local folder=(self._logoTitle or "SyftLib"):gsub("[^%w_%-]","_")
 	pcall(makefolder,"SyftLib"); pcall(makefolder,"SyftLib/"..folder)
 	local ok2,err=pcall(writefile,"SyftLib/"..folder.."/"..name..".json",_enc(data))
@@ -1218,7 +1229,19 @@ function Lib:LoadConfig(name)
 	if not ok2 then return false,"Not found" end
 	local data=_dec(content)
 	for k,entry in pairs(self._configItems) do if data[k]~=nil then pcall(entry.set,data[k]) end end
+	if data["__scale"] then pcall(function() self:SetUIScale(data["__scale"]) end) end
+	if data["__accR"] then
+		pcall(function()
+			self:SetAccentColor(Color3.fromRGB(data["__accR"],data["__accG"],data["__accB"]))
+		end)
+	end
 	return true
+end
+
+function Lib:DeleteConfig(name)
+	local folder=(self._logoTitle or "SyftLib"):gsub("[^%w_%-]","_")
+	local ok2,err=pcall(delfile,"SyftLib/"..folder.."/"..name..".json")
+	return ok2,err
 end
 
 function Lib:ListConfigs()
