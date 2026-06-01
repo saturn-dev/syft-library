@@ -1097,13 +1097,15 @@ function Lib:AddTab(cfg)
 			local pickerFrame=nil
 
 			local function buildPicker()
-				if pickerFrame then pickerFrame:Destroy(); pickerFrame=nil; pickerOpen=false; return end
+				if pickerFrame then
+					pickerFrame:Destroy(); pickerFrame=nil; pickerOpen=false; return
+				end
 				pickerOpen=true
 				local sg=win._sg
 				pickerFrame=Instance.new("Frame",sg)
 				pickerFrame.BackgroundColor3=Color3.fromRGB(20,20,26)
 				pickerFrame.BorderSizePixel=0; pickerFrame.ZIndex=9500
-				pickerFrame.Size=UDim2.new(0,220,0,220)
+				pickerFrame.Size=UDim2.new(0,220,0,248)
 				corner(pickerFrame,8)
 				local stroke2=Instance.new("UIStroke",pickerFrame)
 				stroke2.Color=Color3.fromRGB(50,50,60); stroke2.Thickness=1
@@ -1113,91 +1115,100 @@ function Lib:AddTab(cfg)
 				local ap=swatch.AbsolutePosition; local as=swatch.AbsoluteSize
 				local vp=workspace.CurrentCamera.ViewportSize
 				local px=math.clamp(ap.X+as.X-220, 0, vp.X-224)
-				local py=(ap.Y+as.Y+224>vp.Y) and (ap.Y-224) or (ap.Y+as.Y+4)
+				local py=(ap.Y+as.Y+252>vp.Y) and (ap.Y-252) or (ap.Y+as.Y+4)
 				pickerFrame.Position=UDim2.new(0,px,0,py)
 
-				-- SV square (saturation/value)
 				local svSize=180
+
+				-- SV square: hue-colored bg, white-left gradient, black-bottom gradient
 				local svFrame=Instance.new("Frame",pickerFrame)
 				svFrame.BackgroundColor3=Color3.fromHSV(select(1,Color3.toHSV(curColor)),1,1)
 				svFrame.BorderSizePixel=0; svFrame.Position=UDim2.new(0,10,0,10)
 				svFrame.Size=UDim2.new(0,svSize,0,svSize); svFrame.ZIndex=9501
 				corner(svFrame,4)
-				local wGrad=Instance.new("UIGradient",svFrame); wGrad.Color=ColorSequence.new({ColorSequenceKeypoint.new(0,Color3.new(1,1,1)),ColorSequenceKeypoint.new(1,Color3.new(1,1,1))}); wGrad.Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,0),NumberSequenceKeypoint.new(1,1)})
-				local svOver=Instance.new("Frame",svFrame); svOver.BackgroundColor3=Color3.new(0,0,0); svOver.BorderSizePixel=0; svOver.Size=UDim2.new(1,0,1,0); svOver.ZIndex=9502
-				local bGrad=Instance.new("UIGradient",svOver); bGrad.Color=ColorSequence.new(Color3.new(0,0,0)); bGrad.Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,1),NumberSequenceKeypoint.new(1,0)}); bGrad.Rotation=270
+
+				-- white→transparent left→right (saturation)
+				local wGrad=Instance.new("UIGradient",svFrame)
+				wGrad.Color=ColorSequence.new({
+					ColorSequenceKeypoint.new(0,Color3.new(1,1,1)),
+					ColorSequenceKeypoint.new(1,Color3.new(1,1,1)),
+				})
+				wGrad.Transparency=NumberSequence.new({
+					NumberSequenceKeypoint.new(0,0),
+					NumberSequenceKeypoint.new(1,1),
+				})
+
+				-- transparent→black top→bottom (value), separate overlay
+				local svOver=Instance.new("Frame",svFrame)
+				svOver.BackgroundColor3=Color3.new(0,0,0); svOver.BorderSizePixel=0
+				svOver.Size=UDim2.new(1,0,1,0); svOver.ZIndex=9502; svOver.BackgroundTransparency=0
 				corner(svOver,4)
+				local bGrad=Instance.new("UIGradient",svOver)
+				bGrad.Color=ColorSequence.new(Color3.new(0,0,0))
+				bGrad.Transparency=NumberSequence.new({
+					NumberSequenceKeypoint.new(0,1),
+					NumberSequenceKeypoint.new(1,0),
+				})
 
 				local h,s,v=Color3.toHSV(curColor)
+
 				local svDot=Instance.new("Frame",svFrame)
 				svDot.BackgroundColor3=Color3.new(1,1,1); svDot.BorderSizePixel=0
 				svDot.Size=UDim2.new(0,10,0,10); svDot.AnchorPoint=Vector2.new(0.5,0.5)
-				svDot.Position=UDim2.new(s,0,1-v,0); svDot.ZIndex=9504
+				svDot.Position=UDim2.new(s,0,1-v,0); svDot.ZIndex=9506
 				corner(svDot,50)
-				local svStroke=Instance.new("UIStroke",svDot); svStroke.Color=Color3.new(0,0,0); svStroke.Thickness=1
+				Instance.new("UIStroke",svDot).Color=Color3.new(0,0,0)
 
-				-- Hue slider
+				-- Hue bar
 				local hueTrack=Instance.new("Frame",pickerFrame)
 				hueTrack.BackgroundColor3=Color3.new(1,1,1); hueTrack.BorderSizePixel=0
-				hueTrack.Position=UDim2.new(0,10,0,svSize+16); hueTrack.Size=UDim2.new(0,svSize,0,12); hueTrack.ZIndex=9501
+				hueTrack.Position=UDim2.new(0,10,0,svSize+16)
+				hueTrack.Size=UDim2.new(0,svSize,0,12); hueTrack.ZIndex=9501
 				corner(hueTrack,6)
 				local hueGrad=Instance.new("UIGradient",hueTrack)
 				hueGrad.Color=ColorSequence.new({
-					ColorSequenceKeypoint.new(0,Color3.fromHSV(0,1,1)),ColorSequenceKeypoint.new(1/6,Color3.fromHSV(1/6,1,1)),
-					ColorSequenceKeypoint.new(2/6,Color3.fromHSV(2/6,1,1)),ColorSequenceKeypoint.new(3/6,Color3.fromHSV(3/6,1,1)),
-					ColorSequenceKeypoint.new(4/6,Color3.fromHSV(4/6,1,1)),ColorSequenceKeypoint.new(5/6,Color3.fromHSV(5/6,1,1)),
-					ColorSequenceKeypoint.new(1,Color3.fromHSV(1,1,1)),
+					ColorSequenceKeypoint.new(0,    Color3.fromHSV(0,1,1)),
+					ColorSequenceKeypoint.new(1/6,  Color3.fromHSV(1/6,1,1)),
+					ColorSequenceKeypoint.new(2/6,  Color3.fromHSV(2/6,1,1)),
+					ColorSequenceKeypoint.new(3/6,  Color3.fromHSV(3/6,1,1)),
+					ColorSequenceKeypoint.new(4/6,  Color3.fromHSV(4/6,1,1)),
+					ColorSequenceKeypoint.new(5/6,  Color3.fromHSV(5/6,1,1)),
+					ColorSequenceKeypoint.new(1,    Color3.fromHSV(1,1,1)),
 				})
+
 				local hDot=Instance.new("Frame",hueTrack)
 				hDot.BackgroundColor3=Color3.new(1,1,1); hDot.BorderSizePixel=0
 				hDot.Size=UDim2.new(0,12,0,18); hDot.AnchorPoint=Vector2.new(0.5,0.5)
 				hDot.Position=UDim2.new(h,0,0.5,0); hDot.ZIndex=9503
 				corner(hDot,50)
-				local hDotStroke=Instance.new("UIStroke",hDot); hDotStroke.Color=Color3.new(0,0,0); hDotStroke.Thickness=1
+				Instance.new("UIStroke",hDot).Color=Color3.new(0,0,0)
 
-				-- Hex input bar below hue
+				-- Hex input
 				local hexBg=Instance.new("Frame",pickerFrame)
 				hexBg.BackgroundColor3=Color3.fromRGB(28,28,36); hexBg.BorderSizePixel=0
-				hexBg.Position=UDim2.new(0,10,0,svSize+34); hexBg.Size=UDim2.new(0,svSize,0,24); hexBg.ZIndex=9501
+				hexBg.Position=UDim2.new(0,10,0,svSize+34)
+				hexBg.Size=UDim2.new(0,svSize,0,24); hexBg.ZIndex=9501
 				corner(hexBg,4)
 				local hexBox=Instance.new("TextBox",hexBg)
 				hexBox.BackgroundTransparency=1; hexBox.BorderSizePixel=0
 				hexBox.Position=UDim2.new(0,8,0,0); hexBox.Size=UDim2.new(1,-16,1,0)
 				hexBox.Font=Enum.Font.GothamMedium; hexBox.TextSize=11
-				hexBox.TextColor3=Color3.fromRGB(200,200,202); hexBox.PlaceholderColor3=Color3.fromRGB(100,100,110)
-				hexBox.Text=string.format("#%02X%02X%02X",math.floor(curColor.R*255),math.floor(curColor.G*255),math.floor(curColor.B*255))
-				hexBox.ZIndex=9502; hexBox.TextXAlignment=Enum.TextXAlignment.Left; hexBox.ClearTextOnFocus=false
-
-				-- also resize pickerFrame to fit hex bar
-				pickerFrame.Size=UDim2.new(0,220,0,244)
+				hexBox.TextColor3=Color3.fromRGB(200,200,202)
+				hexBox.PlaceholderColor3=Color3.fromRGB(100,100,110)
+				hexBox.Text=string.format("#%02X%02X%02X",
+					math.floor(curColor.R*255),math.floor(curColor.G*255),math.floor(curColor.B*255))
+				hexBox.ZIndex=9502; hexBox.TextXAlignment=Enum.TextXAlignment.Left
+				hexBox.ClearTextOnFocus=false
 
 				local function fireColor()
 					curColor=Color3.fromHSV(h,s,v)
 					swatch.BackgroundColor3=curColor
-					hexBox.Text=string.format("#%02X%02X%02X",math.floor(curColor.R*255),math.floor(curColor.G*255),math.floor(curColor.B*255))
+					hexBox.Text=string.format("#%02X%02X%02X",
+						math.floor(curColor.R*255),math.floor(curColor.G*255),math.floor(curColor.B*255))
 					if c.Callback then c.Callback(curColor) end
 				end
 
-				hexBox.FocusLost:Connect(function()
-					local hex=hexBox.Text:gsub("#",""):gsub("%s","")
-					if #hex==6 then
-						local ok2,r,g,b=pcall(function()
-							return tonumber(hex:sub(1,2),16),tonumber(hex:sub(3,4),16),tonumber(hex:sub(5,6),16)
-						end)
-						if ok2 and r and g and b then
-							curColor=Color3.fromRGB(r,g,b)
-							h,s,v=Color3.toHSV(curColor)
-							svFrame.BackgroundColor3=Color3.fromHSV(h,1,1)
-							svDot.Position=UDim2.new(s,0,1-v,0)
-							hDot.Position=UDim2.new(h,0,0.5,0)
-							swatch.BackgroundColor3=curColor
-							if c.Callback then c.Callback(curColor) end
-						end
-					end
-					hexBox.Text=string.format("#%02X%02X%02X",math.floor(curColor.R*255),math.floor(curColor.G*255),math.floor(curColor.B*255))
-				end)
-
-				local function updateHueBar()
+				local function updateHue()
 					svFrame.BackgroundColor3=Color3.fromHSV(h,1,1)
 					hDot.Position=UDim2.new(h,0,0.5,0)
 					fireColor()
@@ -1207,7 +1218,28 @@ function Lib:AddTab(cfg)
 					fireColor()
 				end
 
+				hexBox.FocusLost:Connect(function()
+					local hex=hexBox.Text:gsub("#",""):gsub("%s","")
+					if #hex==6 then
+						local r=tonumber(hex:sub(1,2),16)
+						local g=tonumber(hex:sub(3,4),16)
+						local b=tonumber(hex:sub(5,6),16)
+						if r and g and b then
+							curColor=Color3.fromRGB(r,g,b)
+							h,s,v=Color3.toHSV(curColor)
+							svFrame.BackgroundColor3=Color3.fromHSV(h,1,1)
+							svDot.Position=UDim2.new(s,0,1-v,0)
+							hDot.Position=UDim2.new(h,0,0.5,0)
+							swatch.BackgroundColor3=curColor
+							if c.Callback then c.Callback(curColor) end
+						end
+					end
+					hexBox.Text=string.format("#%02X%02X%02X",
+						math.floor(curColor.R*255),math.floor(curColor.G*255),math.floor(curColor.B*255))
+				end)
+
 				local draggingSV=false; local draggingH=false
+
 				svOver.InputBegan:Connect(function(i)
 					if i.UserInputType==Enum.UserInputType.MouseButton1 then
 						draggingSV=true
@@ -1221,7 +1253,7 @@ function Lib:AddTab(cfg)
 						draggingH=true
 						local rel=Vector2.new(i.Position.X,i.Position.Y)-hueTrack.AbsolutePosition
 						h=math.clamp(rel.X/svSize,0,1)
-						updateHueBar()
+						updateHue()
 					end
 				end)
 				UIS.InputEnded:Connect(function(i)
@@ -1239,24 +1271,27 @@ function Lib:AddTab(cfg)
 					elseif draggingH then
 						local rel=mp-hueTrack.AbsolutePosition
 						h=math.clamp(rel.X/svSize,0,1)
-						updateHueBar()
+						updateHue()
 					end
 				end)
 
-				UIS.InputBegan:Connect(function(i)
-					if i.UserInputType==Enum.UserInputType.MouseButton1 and pickerFrame then
-						task.delay(0.05,function()
-							if not pickerFrame then return end
-							local mp=UIS:GetMouseLocation()
-							local fp=pickerFrame.AbsolutePosition; local fs=pickerFrame.AbsoluteSize
-							local sp=swatch.AbsolutePosition; local ss=swatch.AbsoluteSize
-							local onPicker=mp.X>=fp.X and mp.X<=fp.X+fs.X and mp.Y>=fp.Y and mp.Y<=fp.Y+fs.Y
-							local onSwatch=mp.X>=sp.X and mp.X<=sp.X+ss.X and mp.Y>=sp.Y and mp.Y<=sp.Y+ss.Y
-							if not onPicker and not onSwatch then
-								pickerFrame:Destroy(); pickerFrame=nil; pickerOpen=false
-							end
-						end)
-					end
+				-- Close only when clicking outside both the picker and the swatch
+				local closeConn
+				closeConn=UIS.InputBegan:Connect(function(i)
+					if i.UserInputType~=Enum.UserInputType.MouseButton1 then return end
+					if not pickerFrame then closeConn:Disconnect(); return end
+					task.delay(0.08,function()
+						if not pickerFrame then return end
+						local mp=UIS:GetMouseLocation()
+						local fp=pickerFrame.AbsolutePosition; local fs=pickerFrame.AbsoluteSize
+						local sp=swatch.AbsolutePosition;   local ss=swatch.AbsoluteSize
+						local onP=mp.X>=fp.X and mp.X<=fp.X+fs.X and mp.Y>=fp.Y and mp.Y<=fp.Y+fs.Y
+						local onS=mp.X>=sp.X and mp.X<=sp.X+ss.X and mp.Y>=sp.Y and mp.Y<=sp.Y+ss.Y
+						if not onP and not onS then
+							pickerFrame:Destroy(); pickerFrame=nil; pickerOpen=false
+							closeConn:Disconnect()
+						end
+					end)
 				end)
 			end
 
