@@ -952,6 +952,17 @@ function Lib:AddTab(cfg)
 			frame.MouseEnter:Connect(function() TS:Create(frame,_TQ,{BackgroundColor3=Color3.fromRGB(20,20,26)}):Play() end)
 			frame.MouseLeave:Connect(function() TS:Create(frame,_TQ,{BackgroundColor3=T.BG}):Play() end)
 
+			local kbKey="keybind_"..stName.."_"..self._itemCt
+			win:_regConfig(kbKey,
+				function() return tostring(curKey):gsub("Enum.KeyCode.","") end,
+				function(v)
+					local ok2,k=pcall(function() return Enum.KeyCode[v] end)
+					if ok2 and k then
+						curKey=k; keyBtn.Text=keyName(k)
+						if c.IsToggleKey and win then win._keybind=k end
+						if c.Callback then c.Callback(k) end
+					end
+				end)
 			return {
 				GetValue=function() return curKey end,
 				SetValue=function(_,k) curKey=k; keyBtn.Text=keyName(k) end,
@@ -1216,6 +1227,8 @@ function Lib:SaveConfig(name)
 	data["__accR"]=math.floor(ac.R*255)
 	data["__accG"]=math.floor(ac.G*255)
 	data["__accB"]=math.floor(ac.B*255)
+	data["__mapRadius"]=self._mapRadius or 130
+	data["__mapVisible"]=self._mapFrame and self._mapFrame.Visible or false
 	local folder=(self._logoTitle or "SyftLib"):gsub("[^%w_%-]","_")
 	pcall(makefolder,"SyftLib"); pcall(makefolder,"SyftLib/"..folder)
 	local ok2,err=pcall(writefile,"SyftLib/"..folder.."/"..name..".json",_enc(data))
@@ -1235,6 +1248,8 @@ function Lib:LoadConfig(name)
 			self:SetAccentColor(Color3.fromRGB(data["__accR"],data["__accG"],data["__accB"]))
 		end)
 	end
+	if data["__mapRadius"] then self._mapRadius=data["__mapRadius"] end
+	if data["__mapVisible"]~=nil then pcall(function() self:SetMapVisible(data["__mapVisible"]) end) end
 	return true
 end
 
