@@ -1155,11 +1155,47 @@ function Lib:AddTab(cfg)
 				corner(hDot,50)
 				local hDotStroke=Instance.new("UIStroke",hDot); hDotStroke.Color=Color3.new(0,0,0); hDotStroke.Thickness=1
 
+				-- Hex input bar below hue
+				local hexBg=Instance.new("Frame",pickerFrame)
+				hexBg.BackgroundColor3=Color3.fromRGB(28,28,36); hexBg.BorderSizePixel=0
+				hexBg.Position=UDim2.new(0,10,0,svSize+34); hexBg.Size=UDim2.new(0,svSize,0,24); hexBg.ZIndex=9501
+				corner(hexBg,4)
+				local hexBox=Instance.new("TextBox",hexBg)
+				hexBox.BackgroundTransparency=1; hexBox.BorderSizePixel=0
+				hexBox.Position=UDim2.new(0,8,0,0); hexBox.Size=UDim2.new(1,-16,1,0)
+				hexBox.Font=Enum.Font.GothamMedium; hexBox.TextSize=11
+				hexBox.TextColor3=Color3.fromRGB(200,200,202); hexBox.PlaceholderColor3=Color3.fromRGB(100,100,110)
+				hexBox.Text=string.format("#%02X%02X%02X",math.floor(curColor.R*255),math.floor(curColor.G*255),math.floor(curColor.B*255))
+				hexBox.ZIndex=9502; hexBox.TextXAlignment=Enum.TextXAlignment.Left; hexBox.ClearTextOnFocus=false
+
+				-- also resize pickerFrame to fit hex bar
+				pickerFrame.Size=UDim2.new(0,220,0,244)
+
 				local function fireColor()
 					curColor=Color3.fromHSV(h,s,v)
 					swatch.BackgroundColor3=curColor
+					hexBox.Text=string.format("#%02X%02X%02X",math.floor(curColor.R*255),math.floor(curColor.G*255),math.floor(curColor.B*255))
 					if c.Callback then c.Callback(curColor) end
 				end
+
+				hexBox.FocusLost:Connect(function()
+					local hex=hexBox.Text:gsub("#",""):gsub("%s","")
+					if #hex==6 then
+						local ok2,r,g,b=pcall(function()
+							return tonumber(hex:sub(1,2),16),tonumber(hex:sub(3,4),16),tonumber(hex:sub(5,6),16)
+						end)
+						if ok2 and r and g and b then
+							curColor=Color3.fromRGB(r,g,b)
+							h,s,v=Color3.toHSV(curColor)
+							svFrame.BackgroundColor3=Color3.fromHSV(h,1,1)
+							svDot.Position=UDim2.new(s,0,1-v,0)
+							hDot.Position=UDim2.new(h,0,0.5,0)
+							swatch.BackgroundColor3=curColor
+							if c.Callback then c.Callback(curColor) end
+						end
+					end
+					hexBox.Text=string.format("#%02X%02X%02X",math.floor(curColor.R*255),math.floor(curColor.G*255),math.floor(curColor.B*255))
+				end)
 
 				local function updateHueBar()
 					svFrame.BackgroundColor3=Color3.fromHSV(h,1,1)
@@ -1175,7 +1211,7 @@ function Lib:AddTab(cfg)
 				svOver.InputBegan:Connect(function(i)
 					if i.UserInputType==Enum.UserInputType.MouseButton1 then
 						draggingSV=true
-						local rel=i.Position-svFrame.AbsolutePosition
+						local rel=Vector2.new(i.Position.X,i.Position.Y)-svFrame.AbsolutePosition
 						s=math.clamp(rel.X/svSize,0,1); v=1-math.clamp(rel.Y/svSize,0,1)
 						updateSV()
 					end
@@ -1183,7 +1219,7 @@ function Lib:AddTab(cfg)
 				hueTrack.InputBegan:Connect(function(i)
 					if i.UserInputType==Enum.UserInputType.MouseButton1 then
 						draggingH=true
-						local rel=i.Position-hueTrack.AbsolutePosition
+						local rel=Vector2.new(i.Position.X,i.Position.Y)-hueTrack.AbsolutePosition
 						h=math.clamp(rel.X/svSize,0,1)
 						updateHueBar()
 					end
@@ -1195,12 +1231,13 @@ function Lib:AddTab(cfg)
 				end)
 				UIS.InputChanged:Connect(function(i)
 					if i.UserInputType~=Enum.UserInputType.MouseMovement then return end
+					local mp=Vector2.new(i.Position.X,i.Position.Y)
 					if draggingSV then
-						local rel=i.Position-svFrame.AbsolutePosition
+						local rel=mp-svFrame.AbsolutePosition
 						s=math.clamp(rel.X/svSize,0,1); v=1-math.clamp(rel.Y/svSize,0,1)
 						updateSV()
 					elseif draggingH then
-						local rel=i.Position-hueTrack.AbsolutePosition
+						local rel=mp-hueTrack.AbsolutePosition
 						h=math.clamp(rel.X/svSize,0,1)
 						updateHueBar()
 					end
