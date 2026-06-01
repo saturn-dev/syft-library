@@ -281,17 +281,22 @@ function Lib:CreateWindow(cfg)
 	if cfg.Map then self:SetMapVisible(true) end
 
 	self._unlockMouse = false
+	self._mouseConn = nil
 
-	local function applyMouseLock()
-		if sg.Enabled and self._unlockMouse then
+	local function startMouseUnlock()
+		if self._mouseConn then return end
+		UIS.MouseBehavior = Enum.MouseBehavior.Default
+		UIS.MouseIconEnabled = true
+		self._mouseConn = RS.RenderStepped:Connect(function()
 			UIS.MouseBehavior = Enum.MouseBehavior.Default
 			UIS.MouseIconEnabled = true
-		end
+		end)
 	end
 
-	local function restoreMouseLock()
-		if self._unlockMouse then
-			UIS.MouseBehavior = Enum.MouseBehavior.LockCenter
+	local function stopMouseUnlock()
+		if self._mouseConn then
+			self._mouseConn:Disconnect()
+			self._mouseConn = nil
 		end
 	end
 
@@ -299,27 +304,26 @@ function Lib:CreateWindow(cfg)
 		if gp then return end
 		if i.KeyCode == self._keybind then
 			sg.Enabled = not sg.Enabled
-			if sg.Enabled then
-				applyMouseLock()
-			else
-				restoreMouseLock()
+			if sg.Enabled and self._unlockMouse then
+				startMouseUnlock()
+			elseif not sg.Enabled then
+				stopMouseUnlock()
 			end
 		end
 	end)
 
-	self._applyMouseLock   = applyMouseLock
-	self._restoreMouseLock = restoreMouseLock
+	self._startMouseUnlock = startMouseUnlock
+	self._stopMouseUnlock  = stopMouseUnlock
 
 	return self
 end
 
 function Lib:SetMouseUnlock(enabled)
 	self._unlockMouse = enabled
-	if self._sg and self._sg.Enabled then
-		if enabled then
-			UIS.MouseBehavior = Enum.MouseBehavior.Default
-			UIS.MouseIconEnabled = true
-		end
+	if enabled and self._sg and self._sg.Enabled then
+		self._startMouseUnlock()
+	elseif not enabled then
+		self._stopMouseUnlock()
 	end
 end
 
@@ -979,19 +983,23 @@ function Lib:AddTab(cfg)
 				if c.Callback then c.Callback(newKey) end
 			end
 
+			local mouseReady = false
+
 			keyBtn.Activated:Connect(function()
 				if listening then return end
 				listening=true
+				mouseReady=false
 				TS:Create(keyBtn,_TQ,{BackgroundColor3=T.ACC_BG}):Play()
 				keyBtn.Text="..."
 				keyBtn.TextColor3=T.ACC
+				task.defer(function() mouseReady=true end)
 			end)
 
 			UIS.InputBegan:Connect(function(i, gp)
 				if not listening then return end
 				if i.UserInputType==Enum.UserInputType.Keyboard then
 					applyBind(i.KeyCode, false)
-				elseif c.MouseBinds and mouseNames[i.UserInputType] then
+				elseif c.MouseBinds and mouseReady and mouseNames[i.UserInputType] then
 					applyBind(i.UserInputType, true)
 				end
 			end)
@@ -1334,6 +1342,7 @@ function Lib:ListConfigs()
 end
 
 function Lib:Destroy()
+	if self._mouseConn then self._mouseConn:Disconnect(); self._mouseConn=nil end
 	if self._mapConn then self._mapConn:Disconnect() end
 	pcall(function() self._sg:Destroy() end)
 	pcall(function() if self._mapGui then self._mapGui:Destroy() end end)
