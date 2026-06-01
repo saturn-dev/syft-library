@@ -712,12 +712,15 @@ function Lib:AddTab(cfg)
 							if c.Callback then c.Callback(multiSelected) end
 						else
 							selected=opt; selLbl.Text=opt
-							for _,ch in ipairs(optContainer:GetChildren()) do
-								if ch:IsA("TextButton") then
-									local chOl=ch:FindFirstChildOfClass("TextLabel")
-									local cur=chOl and chOl.Text==opt
-									tw(ch,TQ,{BackgroundTransparency=cur and 0.6 or 1})
-									if chOl then tw(chOl,TQ,{TextColor3=cur and T.ACC or T.TEXT}) end
+							local oc=optContainer
+							if oc then
+								for _,ch in ipairs(oc:GetChildren()) do
+									if ch:IsA("TextButton") then
+										local chOl=ch:FindFirstChildOfClass("TextLabel")
+										local cur=chOl and chOl.Text==opt
+										tw(ch,TQ,{BackgroundTransparency=cur and 0.6 or 1})
+										if chOl then tw(chOl,TQ,{TextColor3=cur and T.ACC or T.TEXT}) end
+									end
 								end
 							end
 							if c.Callback then c.Callback(opt) end
