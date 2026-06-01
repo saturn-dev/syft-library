@@ -959,14 +959,16 @@ function Lib:AddTab(cfg)
 	navBtn.Activated:Connect(function() win:_SelectTab(tab) end)
 	navBtn.MouseEnter:Connect(function()
 		if win._active~=tab then
-			navBtn.BackgroundTransparency=0.85; navBtn.BackgroundColor3=T.BG3
-			navLbl.TextColor3=T.TEXT; navIcon.ImageColor3=T.ACC
+			tw(navBtn,TQ,{BackgroundTransparency=0.85,BackgroundColor3=T.BG3})
+			tw(navLbl,TQ,{TextColor3=T.TEXT})
+			navIcon.ImageColor3=T.ACC
 		end
 	end)
 	navBtn.MouseLeave:Connect(function()
 		if win._active~=tab then
-			navBtn.BackgroundTransparency=1
-			navLbl.TextColor3=T.MUTED; navIcon.ImageColor3=T.MUTED
+			tw(navBtn,TQ,{BackgroundTransparency=1})
+			tw(navLbl,TQ,{TextColor3=T.MUTED})
+			navIcon.ImageColor3=T.MUTED
 		end
 	end)
 
@@ -979,14 +981,13 @@ function Lib:_SelectTab(tab)
 	if self._active then
 		local p=self._active
 		p._frame.Visible=false
-		p._navBtn.BackgroundTransparency=1
-		p._navLbl.TextColor3=T.MUTED
+		tw(p._navBtn,TQ,{BackgroundTransparency=1,BackgroundColor3=T.BG3})
+		tw(p._navLbl,TQ,{TextColor3=T.MUTED})
 		p._navIcon.ImageColor3=T.MUTED
 	end
 	self._active=tab; tab._frame.Visible=true
-	tab._navBtn.BackgroundTransparency=0
-	tab._navBtn.BackgroundColor3=T.BG3
-	tab._navLbl.TextColor3=T.TEXT
+	tw(tab._navBtn,TQ,{BackgroundTransparency=0,BackgroundColor3=T.BG3})
+	tw(tab._navLbl,TQ,{TextColor3=T.TEXT})
 	tab._navIcon.ImageColor3=T.ACC
 	self._hTitle.Text=tab._title; self._hDesc.Text=tab._desc
 	for _,child in ipairs(self._stBar:GetChildren()) do if child:IsA("TextButton") then child:Destroy() end end
@@ -1013,17 +1014,17 @@ function Lib:_BuildSTBtn(tab,st,order)
 		for _,child in ipairs(self._stBar:GetChildren()) do
 			if child:IsA("TextButton") then
 				local ca=(child.Name=="STBtn_"..st._name)
-				child.TextColor3=ca and T.TEXT or T.MUTED
+				tw(child,TQ,{TextColor3=ca and T.TEXT or T.MUTED})
 				local l=child:FindFirstChildOfClass("Frame")
 				if l then
 					l.BackgroundColor3=T.ACC
-					l.BackgroundTransparency=ca and 0 or 1
+					tw(l,TQ,{BackgroundTransparency=ca and 0 or 1})
 				end
 			end
 		end
 	end)
-	btn.MouseEnter:Connect(function() if tab._activeST~=st then btn.TextColor3=T.TEXT end end)
-	btn.MouseLeave:Connect(function() if tab._activeST~=st then btn.TextColor3=T.MUTED end end)
+	btn.MouseEnter:Connect(function() if tab._activeST~=st then tw(btn,TQ,{TextColor3=T.TEXT}) end end)
+	btn.MouseLeave:Connect(function() if tab._activeST~=st then tw(btn,TQ,{TextColor3=T.MUTED}) end end)
 end
 
 function Lib:_BuildMap()
