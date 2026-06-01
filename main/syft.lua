@@ -27,58 +27,34 @@ end
 local function applyAcc(c)
 	T.ACC    = c
 	T.ACC_BG = Color3.fromRGB(math.floor(c.R*255*0.5), math.floor(c.G*255*0.5), math.floor(c.B*255*0.55))
-	for _, r in ipairs(_accentObjs)   do pcall(function() r.obj[r.prop] = c       end) end
-	for _, r in ipairs(_accentBGObjs) do pcall(function() r.obj[r.prop] = T.ACC_BG end) end
+	local alive = {}
+	for _, r in ipairs(_accentObjs) do
+		if pcall(function() r.obj[r.prop] = c end) then
+			table.insert(alive, r)
+		end
+	end
+	_accentObjs = alive
+	local aliveB = {}
+	for _, r in ipairs(_accentBGObjs) do
+		if pcall(function() r.obj[r.prop] = T.ACC_BG end) then
+			table.insert(aliveB, r)
+		end
+	end
+	_accentBGObjs = aliveB
+	local aliveT = {}
 	for _, r in ipairs(_toggleRefs) do
-		pcall(function()
+		local ok = pcall(function()
 			if r.getState() then
 				r.dot.BackgroundColor3  = c
 				r.pill.BackgroundColor3 = T.ACC_BG
 			end
 		end)
+		if ok then table.insert(aliveT, r) end
 	end
+	_toggleRefs = aliveT
 end
 
-local _activeTweens = {}
-local function tw(obj, t, props)
-	local tween = TS:Create(obj, t, props)
-	local id = tostring(obj)
-	if _activeTweens[id] then
-		pcall(function() _activeTweens[id]:Cancel() end)
-	end
-	_activeTweens[id] = tween
-	tween:Play()
-	tween.Completed:Connect(function()
-		if _activeTweens[id] == tween then _activeTweens[id] = nil end
-	end)
-end
-local function cancelTweensOnAccentObjs()
-	for _, r in ipairs(_accentObjs) do
-		local id = tostring(r.obj)
-		if _activeTweens[id] then
-			pcall(function() _activeTweens[id]:Cancel() end)
-			_activeTweens[id] = nil
-		end
-	end
-	for _, r in ipairs(_accentBGObjs) do
-		local id = tostring(r.obj)
-		if _activeTweens[id] then
-			pcall(function() _activeTweens[id]:Cancel() end)
-			_activeTweens[id] = nil
-		end
-	end
-	for _, r in ipairs(_toggleRefs) do
-		pcall(function()
-			for _, obj in ipairs({r.dot, r.pill}) do
-				local id = tostring(obj)
-				if _activeTweens[id] then
-					pcall(function() _activeTweens[id]:Cancel() end)
-					_activeTweens[id] = nil
-				end
-			end
-		end)
-	end
-end
+local function tw(obj, t, props) TS:Create(obj, t, props):Play() end
 local TQ  = TweenInfo.new(0.18, Enum.EasingStyle.Quad,  Enum.EasingDirection.Out)
 local TQS = TweenInfo.new(0.28, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
 
@@ -309,9 +285,8 @@ function Lib:CreateWindow(cfg)
 end
 
 function Lib:SetAccentColor(c)
-	cancelTweensOnAccentObjs()
 	applyAcc(c)
-	self._glow.ImageColor3 = c
+	pcall(function() self._glow.ImageColor3 = c end)
 	if self._logoTitle then
 		local title = self._logoTitle
 		local dot = title:find("%.")
@@ -321,12 +296,20 @@ function Lib:SetAccentColor(c)
 				T.TEXT.R*255,T.TEXT.G*255,T.TEXT.B*255,b, c.R*255,c.G*255,c.B*255,a)
 		end
 	end
-	if self._active then self._active._navIcon.ImageColor3 = c end
+	if self._active then
+		pcall(function() self._active._navIcon.ImageColor3 = c end)
+	end
 	for _, child in ipairs(self._stBar:GetChildren()) do
 		if child:IsA("TextButton") then
-			local l=child:FindFirstChildOfClass("Frame")
-			if l and l.BackgroundTransparency < 0.5 then l.BackgroundColor3=c end
+			local l = child:FindFirstChildOfClass("Frame")
+			if l then l.BackgroundColor3 = c end
 		end
+	end
+	for _, tab in ipairs(self._tabs) do
+		local isActive = (self._active == tab)
+		pcall(function()
+			tab._navIcon.ImageColor3 = isActive and c or T.MUTED
+		end)
 	end
 end
 
@@ -1005,7 +988,6 @@ function Lib:_BuildSTBtn(tab,st,order)
 	line.BackgroundColor3=T.ACC; line.BorderSizePixel=0
 	line.AnchorPoint=Vector2.new(0,1); line.Position=UDim2.new(0,0,1,0)
 	line.Size=UDim2.new(1,0,0,2); line.BackgroundTransparency=isActive and 0 or 1; line.ZIndex=5
-	regAcc(line,"BackgroundColor3")
 
 	btn.Activated:Connect(function()
 		if tab._activeST==st then return end
@@ -1077,7 +1059,8 @@ function Lib:_BuildMap()
 	ph.AnchorPoint=Vector2.new(0.5,0.5); ph.Position=UDim2.new(0.5,0,0.5,-4)
 	ph.Size=UDim2.new(0,24,0,24); ph.ZIndex=5; corner(ph,50)
 	newLabel(pt,{Name="PN",AnchorPoint=Vector2.new(0.5,1),Position=UDim2.new(0.5,0,1,-2),Size=UDim2.new(1,0,0,12),TextSize=9,TextColor3=Color3.fromRGB(230,230,230),Font=Enum.Font.GothamBold,TextXAlignment=Enum.TextXAlignment.Center,ZIndex=5})
-	newLabel(pt,{Name="PD",AnchorPoint=Vector2.new(0.5,1),Position=UDim2.new(0.5,0,1,10),Size=UDim2.new(1,0,0,12),TextSize=9,TextColor3=T.ACC,Font=Enum.Font.GothamMedium,TextXAlignment=Enum.TextXAlignment.Center,ZIndex=5})
+	local pdLbl=newLabel(pt,{Name="PD",AnchorPoint=Vector2.new(0.5,1),Position=UDim2.new(0.5,0,1,10),Size=UDim2.new(1,0,0,12),TextSize=9,TextColor3=T.ACC,Font=Enum.Font.GothamMedium,TextXAlignment=Enum.TextXAlignment.Center,ZIndex=5})
+	regAcc(pdLbl,"TextColor3")
 	self._pt=pt
 end
 
@@ -1136,6 +1119,8 @@ function Lib:_MapAddPlayer(p)
 	local f=self._pt:Clone(); f.Visible=false; f.Name="Player_"..p.Name; f.Parent=self._mapFrame
 	local ring2=f:FindFirstChild("Ring")
 	if ring2 then regAcc(ring2,"BackgroundColor3") end
+	local pd2=f:FindFirstChild("PD")
+	if pd2 then regAcc(pd2,"TextColor3") end
 	local nl=f:FindFirstChild("PN"); if nl then nl.Text=p.DisplayName end
 	local hs=f:FindFirstChild("HS")
 	task.spawn(function()
