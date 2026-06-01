@@ -992,26 +992,23 @@ function Lib:AddTab(cfg)
 				if c.Callback then c.Callback(newKey) end
 			end
 
-			local mouseReady = false
-
-			keyBtn.Activated:Connect(function()
+			keyBtn.MouseButton1Click:Connect(function()
 				if listening then return end
 				listening=true
-				mouseReady=false
 				TS:Create(keyBtn,_TQ,{BackgroundColor3=T.ACC_BG}):Play()
 				keyBtn.Text="..."
 				keyBtn.TextColor3=T.ACC
-				task.delay(0.1, function() mouseReady=true end)
 			end)
 
 			UIS.InputBegan:Connect(function(i, gp)
 				if not listening then return end
 				if i.UserInputType==Enum.UserInputType.Keyboard then
-					applyBind(i.KeyCode, false)
-				elseif c.MouseBinds and mouseReady and mouseNames[i.UserInputType] then
+					if not gp then applyBind(i.KeyCode, false) end
+				elseif c.MouseBinds and mouseNames[i.UserInputType] then
 					applyBind(i.UserInputType, true)
 				end
 			end)
+
 
 			frame.MouseEnter:Connect(function() TS:Create(frame,_TQ,{BackgroundColor3=Color3.fromRGB(20,20,26)}):Play() end)
 			frame.MouseLeave:Connect(function() TS:Create(frame,_TQ,{BackgroundColor3=T.BG}):Play() end)
