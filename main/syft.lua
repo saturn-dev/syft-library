@@ -300,9 +300,17 @@ function Lib:CreateWindow(cfg)
 		end
 	end
 
+	self._keybindIsMouse = false
+
 	UIS.InputBegan:Connect(function(i, gp)
-		if gp then return end
-		if i.KeyCode == self._keybind then
+		local triggered = false
+		if self._keybindIsMouse then
+			triggered = (i.UserInputType == self._keybind)
+		else
+			if gp then return end
+			triggered = (i.KeyCode == self._keybind)
+		end
+		if triggered then
 			sg.Enabled = not sg.Enabled
 			if sg.Enabled and self._unlockMouse then
 				startMouseUnlock()
@@ -977,8 +985,9 @@ function Lib:AddTab(cfg)
 				keyBtn.Text=bindName(newKey)
 				TS:Create(keyBtn,_TQ,{BackgroundColor3=T.BG3}):Play()
 				keyBtn.TextColor3=T.TEXT
-				if c.IsToggleKey and win and not fromMouse then
+				if c.IsToggleKey and win then
 					win._keybind=newKey
+					win._keybindIsMouse=fromMouse
 				end
 				if c.Callback then c.Callback(newKey) end
 			end
@@ -992,7 +1001,7 @@ function Lib:AddTab(cfg)
 				TS:Create(keyBtn,_TQ,{BackgroundColor3=T.ACC_BG}):Play()
 				keyBtn.Text="..."
 				keyBtn.TextColor3=T.ACC
-				task.defer(function() mouseReady=true end)
+				task.delay(0.1, function() mouseReady=true end)
 			end)
 
 			UIS.InputBegan:Connect(function(i, gp)
@@ -1020,6 +1029,10 @@ function Lib:AddTab(cfg)
 						for uit,nm in pairs(mouseNames) do
 							if nm==mname then
 								curKey=uit; keyBtn.Text=nm
+								if c.IsToggleKey and win then
+									win._keybind=uit
+									win._keybindIsMouse=true
+								end
 								if c.Callback then c.Callback(uit) end
 								return
 							end
