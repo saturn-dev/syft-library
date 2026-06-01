@@ -991,6 +991,7 @@ function Lib:AddTab(cfg)
 				end
 				if c.Callback then c.Callback(newKey) end
 			end
+			local mouse = PL.LocalPlayer:GetMouse()
 
 			keyBtn.MouseButton1Click:Connect(function()
 				if listening then return end
@@ -1004,10 +1005,26 @@ function Lib:AddTab(cfg)
 				if not listening then return end
 				if i.UserInputType==Enum.UserInputType.Keyboard then
 					if not gp then applyBind(i.KeyCode, false) end
-				elseif c.MouseBinds and mouseNames[i.UserInputType] then
-					applyBind(i.UserInputType, true)
 				end
 			end)
+
+			if c.MouseBinds then
+				mouse.Button1Up:Connect(function()
+					if not listening then return end
+					local pos = UIS:GetMouseLocation()
+					local ap  = keyBtn.AbsolutePosition
+					local as  = keyBtn.AbsoluteSize
+					local onBtn = pos.X>=ap.X and pos.X<=ap.X+as.X and pos.Y>=ap.Y and pos.Y<=ap.Y+as.Y
+					if not onBtn then
+						applyBind(Enum.UserInputType.MouseButton1, true)
+					end
+				end)
+				mouse.Button2Up:Connect(function()
+					if not listening then return end
+					applyBind(Enum.UserInputType.MouseButton2, true)
+				end)
+			end
+
 
 
 			frame.MouseEnter:Connect(function() TS:Create(frame,_TQ,{BackgroundColor3=Color3.fromRGB(20,20,26)}):Play() end)
