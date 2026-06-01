@@ -24,29 +24,32 @@ local function regToggle(dot, pill, getState)
 	table.insert(_toggleRefs, {dot=dot, pill=pill, getState=getState})
 end
 
+local _ZTI = TweenInfo.new(0)
 local function applyAcc(c)
 	T.ACC    = c
 	T.ACC_BG = Color3.fromRGB(math.floor(c.R*255*0.5), math.floor(c.G*255*0.5), math.floor(c.B*255*0.55))
 	local alive = {}
 	for _, r in ipairs(_accentObjs) do
-		if pcall(function() r.obj[r.prop] = c end) then
-			table.insert(alive, r)
-		end
+		local ok = pcall(function()
+			TS:Create(r.obj, _ZTI, {[r.prop]=c}):Play()
+		end)
+		if ok then table.insert(alive, r) end
 	end
 	_accentObjs = alive
 	local aliveB = {}
 	for _, r in ipairs(_accentBGObjs) do
-		if pcall(function() r.obj[r.prop] = T.ACC_BG end) then
-			table.insert(aliveB, r)
-		end
+		local ok = pcall(function()
+			TS:Create(r.obj, _ZTI, {[r.prop]=T.ACC_BG}):Play()
+		end)
+		if ok then table.insert(aliveB, r) end
 	end
 	_accentBGObjs = aliveB
 	local aliveT = {}
 	for _, r in ipairs(_toggleRefs) do
 		local ok = pcall(function()
 			if r.getState() then
-				r.dot.BackgroundColor3  = c
-				r.pill.BackgroundColor3 = T.ACC_BG
+				TS:Create(r.dot,  _ZTI, {BackgroundColor3=c}):Play()
+				TS:Create(r.pill, _ZTI, {BackgroundColor3=T.ACC_BG}):Play()
 			end
 		end)
 		if ok then table.insert(aliveT, r) end
@@ -954,8 +957,18 @@ function Lib:AddTab(cfg)
 	tab._activeST=subTabs[1]; subTabs[1]._frame.Visible=true
 
 	navBtn.Activated:Connect(function() win:_SelectTab(tab) end)
-	navBtn.MouseEnter:Connect(function() if win._active~=tab then tw(navBtn,TQ,{BackgroundTransparency=0.85,BackgroundColor3=T.BG3}); tw(navLbl,TQ,{TextColor3=T.TEXT}) end end)
-	navBtn.MouseLeave:Connect(function() if win._active~=tab then tw(navBtn,TQ,{BackgroundTransparency=1}); tw(navLbl,TQ,{TextColor3=T.MUTED}) end end)
+	navBtn.MouseEnter:Connect(function()
+		if win._active~=tab then
+			navBtn.BackgroundTransparency=0.85; navBtn.BackgroundColor3=T.BG3
+			navLbl.TextColor3=T.TEXT; navIcon.ImageColor3=T.ACC
+		end
+	end)
+	navBtn.MouseLeave:Connect(function()
+		if win._active~=tab then
+			navBtn.BackgroundTransparency=1
+			navLbl.TextColor3=T.MUTED; navIcon.ImageColor3=T.MUTED
+		end
+	end)
 
 	table.insert(self._tabs,tab)
 	if #self._tabs==1 then self:_SelectTab(tab) end
@@ -966,11 +979,15 @@ function Lib:_SelectTab(tab)
 	if self._active then
 		local p=self._active
 		p._frame.Visible=false
-		tw(p._navBtn,TQ,{BackgroundTransparency=1}); tw(p._navLbl,TQ,{TextColor3=T.MUTED}); tw(p._navIcon,TQ,{ImageColor3=T.MUTED})
+		p._navBtn.BackgroundTransparency=1
+		p._navLbl.TextColor3=T.MUTED
+		p._navIcon.ImageColor3=T.MUTED
 	end
 	self._active=tab; tab._frame.Visible=true
-	tw(tab._navBtn,TQ,{BackgroundTransparency=0,BackgroundColor3=T.BG3})
-	tw(tab._navLbl,TQ,{TextColor3=T.TEXT}); tw(tab._navIcon,TQ,{ImageColor3=T.ACC})
+	tab._navBtn.BackgroundTransparency=0
+	tab._navBtn.BackgroundColor3=T.BG3
+	tab._navLbl.TextColor3=T.TEXT
+	tab._navIcon.ImageColor3=T.ACC
 	self._hTitle.Text=tab._title; self._hDesc.Text=tab._desc
 	for _,child in ipairs(self._stBar:GetChildren()) do if child:IsA("TextButton") then child:Destroy() end end
 	for i,_ in ipairs(tab._subDefs) do self:_BuildSTBtn(tab,tab._subTabs[i],i) end
@@ -996,13 +1013,17 @@ function Lib:_BuildSTBtn(tab,st,order)
 		for _,child in ipairs(self._stBar:GetChildren()) do
 			if child:IsA("TextButton") then
 				local ca=(child.Name=="STBtn_"..st._name)
-				tw(child,TQ,{TextColor3=ca and T.TEXT or T.MUTED})
-				local l=child:FindFirstChildOfClass("Frame"); if l then tw(l,TQ,{BackgroundTransparency=ca and 0 or 1}) end
+				child.TextColor3=ca and T.TEXT or T.MUTED
+				local l=child:FindFirstChildOfClass("Frame")
+				if l then
+					l.BackgroundColor3=T.ACC
+					l.BackgroundTransparency=ca and 0 or 1
+				end
 			end
 		end
 	end)
-	btn.MouseEnter:Connect(function() if tab._activeST~=st then tw(btn,TQ,{TextColor3=T.TEXT}) end end)
-	btn.MouseLeave:Connect(function() if tab._activeST~=st then tw(btn,TQ,{TextColor3=T.MUTED}) end end)
+	btn.MouseEnter:Connect(function() if tab._activeST~=st then btn.TextColor3=T.TEXT end end)
+	btn.MouseLeave:Connect(function() if tab._activeST~=st then btn.TextColor3=T.MUTED end end)
 end
 
 function Lib:_BuildMap()
