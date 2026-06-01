@@ -1069,6 +1069,169 @@ function Lib:AddTab(cfg)
 			}
 		end
 
+
+		-- ── AddColorPicker ──────────────────────────────────────────────
+		function st:AddColorPicker(c)
+			c=c or {}
+			self._itemCt=self._itemCt+1
+			local curColor = c.Default or T.ACC
+			local frame=Instance.new("Frame",self._scroll)
+			TS:Create(frame,_TQ,{BackgroundColor3=T.BG}):Play(); frame.BorderSizePixel=0
+			frame.LayoutOrder=self._itemCt; frame.Size=UDim2.new(1,0,0,64); frame.ZIndex=3
+			corner(frame,6)
+			newLabel(frame,{Position=UDim2.new(0,14,0,12),Size=UDim2.new(0.6,0,0,22),
+				Text=c.Title or "Color",TextColor3=T.TEXT,TextSize=16,Font=Enum.Font.GothamBold,ZIndex=4})
+			newLabel(frame,{Position=UDim2.new(0,14,0,36),Size=UDim2.new(0.6,0,0,18),
+				Text=c.Description or "",TextColor3=T.MUTED,TextSize=12,ZIndex=4})
+
+			local swatch=Instance.new("TextButton",frame)
+			swatch.BackgroundColor3=curColor; swatch.BorderSizePixel=0
+			swatch.AnchorPoint=Vector2.new(1,0.5); swatch.Position=UDim2.new(1,-14,0.5,0)
+			swatch.Size=UDim2.new(0,40,0,28); swatch.Text=""; swatch.AutoButtonColor=false; swatch.ZIndex=5
+			corner(swatch,6)
+			local swatchStroke=Instance.new("UIStroke",swatch)
+			swatchStroke.Color=Color3.fromRGB(50,50,60); swatchStroke.Thickness=1
+
+			-- picker popup (parented to sg so it floats above everything)
+			local pickerOpen=false
+			local pickerFrame=nil
+
+			local function buildPicker()
+				if pickerFrame then pickerFrame:Destroy(); pickerFrame=nil; pickerOpen=false; return end
+				pickerOpen=true
+				local sg=win._sg
+				pickerFrame=Instance.new("Frame",sg)
+				pickerFrame.BackgroundColor3=Color3.fromRGB(20,20,26)
+				pickerFrame.BorderSizePixel=0; pickerFrame.ZIndex=9500
+				pickerFrame.Size=UDim2.new(0,220,0,220)
+				corner(pickerFrame,8)
+				local stroke2=Instance.new("UIStroke",pickerFrame)
+				stroke2.Color=Color3.fromRGB(50,50,60); stroke2.Thickness=1
+
+				RS.RenderStepped:Wait()
+				if not pickerFrame or not pickerFrame.Parent then return end
+				local ap=swatch.AbsolutePosition; local as=swatch.AbsoluteSize
+				local vp=workspace.CurrentCamera.ViewportSize
+				local px=math.clamp(ap.X+as.X-220, 0, vp.X-224)
+				local py=(ap.Y+as.Y+224>vp.Y) and (ap.Y-224) or (ap.Y+as.Y+4)
+				pickerFrame.Position=UDim2.new(0,px,0,py)
+
+				-- SV square (saturation/value)
+				local svSize=180
+				local svFrame=Instance.new("Frame",pickerFrame)
+				svFrame.BackgroundColor3=Color3.fromHSV(select(1,Color3.toHSV(curColor)),1,1)
+				svFrame.BorderSizePixel=0; svFrame.Position=UDim2.new(0,10,0,10)
+				svFrame.Size=UDim2.new(0,svSize,0,svSize); svFrame.ZIndex=9501
+				corner(svFrame,4)
+				local wGrad=Instance.new("UIGradient",svFrame); wGrad.Color=ColorSequence.new({ColorSequenceKeypoint.new(0,Color3.new(1,1,1)),ColorSequenceKeypoint.new(1,Color3.new(1,1,1))}); wGrad.Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,0),NumberSequenceKeypoint.new(1,1)})
+				local svOver=Instance.new("Frame",svFrame); svOver.BackgroundColor3=Color3.new(0,0,0); svOver.BorderSizePixel=0; svOver.Size=UDim2.new(1,0,1,0); svOver.ZIndex=9502
+				local bGrad=Instance.new("UIGradient",svOver); bGrad.Color=ColorSequence.new(Color3.new(0,0,0)); bGrad.Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,1),NumberSequenceKeypoint.new(1,0)}); bGrad.Rotation=270
+				corner(svOver,4)
+
+				local h,s,v=Color3.toHSV(curColor)
+				local svDot=Instance.new("Frame",svFrame)
+				svDot.BackgroundColor3=Color3.new(1,1,1); svDot.BorderSizePixel=0
+				svDot.Size=UDim2.new(0,10,0,10); svDot.AnchorPoint=Vector2.new(0.5,0.5)
+				svDot.Position=UDim2.new(s,0,1-v,0); svDot.ZIndex=9504
+				corner(svDot,50)
+				local svStroke=Instance.new("UIStroke",svDot); svStroke.Color=Color3.new(0,0,0); svStroke.Thickness=1
+
+				-- Hue slider
+				local hueTrack=Instance.new("Frame",pickerFrame)
+				hueTrack.BackgroundColor3=Color3.new(1,1,1); hueTrack.BorderSizePixel=0
+				hueTrack.Position=UDim2.new(0,10,0,svSize+16); hueTrack.Size=UDim2.new(0,svSize,0,12); hueTrack.ZIndex=9501
+				corner(hueTrack,6)
+				local hueGrad=Instance.new("UIGradient",hueTrack)
+				hueGrad.Color=ColorSequence.new({
+					ColorSequenceKeypoint.new(0,Color3.fromHSV(0,1,1)),ColorSequenceKeypoint.new(1/6,Color3.fromHSV(1/6,1,1)),
+					ColorSequenceKeypoint.new(2/6,Color3.fromHSV(2/6,1,1)),ColorSequenceKeypoint.new(3/6,Color3.fromHSV(3/6,1,1)),
+					ColorSequenceKeypoint.new(4/6,Color3.fromHSV(4/6,1,1)),ColorSequenceKeypoint.new(5/6,Color3.fromHSV(5/6,1,1)),
+					ColorSequenceKeypoint.new(1,Color3.fromHSV(1,1,1)),
+				})
+				local hDot=Instance.new("Frame",hueTrack)
+				hDot.BackgroundColor3=Color3.new(1,1,1); hDot.BorderSizePixel=0
+				hDot.Size=UDim2.new(0,12,0,18); hDot.AnchorPoint=Vector2.new(0.5,0.5)
+				hDot.Position=UDim2.new(h,0,0.5,0); hDot.ZIndex=9503
+				corner(hDot,50)
+				local hDotStroke=Instance.new("UIStroke",hDot); hDotStroke.Color=Color3.new(0,0,0); hDotStroke.Thickness=1
+
+				local function fireColor()
+					curColor=Color3.fromHSV(h,s,v)
+					swatch.BackgroundColor3=curColor
+					if c.Callback then c.Callback(curColor) end
+				end
+
+				local function updateHueBar()
+					svFrame.BackgroundColor3=Color3.fromHSV(h,1,1)
+					hDot.Position=UDim2.new(h,0,0.5,0)
+					fireColor()
+				end
+				local function updateSV()
+					svDot.Position=UDim2.new(s,0,1-v,0)
+					fireColor()
+				end
+
+				local draggingSV=false; local draggingH=false
+				svOver.InputBegan:Connect(function(i)
+					if i.UserInputType==Enum.UserInputType.MouseButton1 then
+						draggingSV=true
+						local rel=i.Position-svFrame.AbsolutePosition
+						s=math.clamp(rel.X/svSize,0,1); v=1-math.clamp(rel.Y/svSize,0,1)
+						updateSV()
+					end
+				end)
+				hueTrack.InputBegan:Connect(function(i)
+					if i.UserInputType==Enum.UserInputType.MouseButton1 then
+						draggingH=true
+						local rel=i.Position-hueTrack.AbsolutePosition
+						h=math.clamp(rel.X/svSize,0,1)
+						updateHueBar()
+					end
+				end)
+				UIS.InputEnded:Connect(function(i)
+					if i.UserInputType==Enum.UserInputType.MouseButton1 then
+						draggingSV=false; draggingH=false
+					end
+				end)
+				UIS.InputChanged:Connect(function(i)
+					if i.UserInputType~=Enum.UserInputType.MouseMovement then return end
+					if draggingSV then
+						local rel=i.Position-svFrame.AbsolutePosition
+						s=math.clamp(rel.X/svSize,0,1); v=1-math.clamp(rel.Y/svSize,0,1)
+						updateSV()
+					elseif draggingH then
+						local rel=i.Position-hueTrack.AbsolutePosition
+						h=math.clamp(rel.X/svSize,0,1)
+						updateHueBar()
+					end
+				end)
+
+				UIS.InputBegan:Connect(function(i)
+					if i.UserInputType==Enum.UserInputType.MouseButton1 and pickerFrame then
+						task.delay(0.05,function()
+							if not pickerFrame then return end
+							local mp=UIS:GetMouseLocation()
+							local fp=pickerFrame.AbsolutePosition; local fs=pickerFrame.AbsoluteSize
+							local sp=swatch.AbsolutePosition; local ss=swatch.AbsoluteSize
+							local onPicker=mp.X>=fp.X and mp.X<=fp.X+fs.X and mp.Y>=fp.Y and mp.Y<=fp.Y+fs.Y
+							local onSwatch=mp.X>=sp.X and mp.X<=sp.X+ss.X and mp.Y>=sp.Y and mp.Y<=sp.Y+ss.Y
+							if not onPicker and not onSwatch then
+								pickerFrame:Destroy(); pickerFrame=nil; pickerOpen=false
+							end
+						end)
+					end
+				end)
+			end
+
+			swatch.MouseButton1Click:Connect(buildPicker)
+			frame.MouseEnter:Connect(function() TS:Create(frame,_TQ,{BackgroundColor3=Color3.fromRGB(20,20,26)}):Play() end)
+			frame.MouseLeave:Connect(function() TS:Create(frame,_TQ,{BackgroundColor3=T.BG}):Play() end)
+
+			return {
+				GetValue=function() return curColor end,
+				SetValue=function(_,col) curColor=col; swatch.BackgroundColor3=col end,
+			}
+		end
 		subTabs[i]=st; subTabs[stName]=st
 	end
 
