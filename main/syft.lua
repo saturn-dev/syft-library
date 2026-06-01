@@ -39,7 +39,46 @@ local function applyAcc(c)
 	end
 end
 
-local function tw(obj, t, props) TS:Create(obj, t, props):Play() end
+local _activeTweens = {}
+local function tw(obj, t, props)
+	local tween = TS:Create(obj, t, props)
+	local id = tostring(obj)
+	if _activeTweens[id] then
+		pcall(function() _activeTweens[id]:Cancel() end)
+	end
+	_activeTweens[id] = tween
+	tween:Play()
+	tween.Completed:Connect(function()
+		if _activeTweens[id] == tween then _activeTweens[id] = nil end
+	end)
+end
+local function cancelTweensOnAccentObjs()
+	for _, r in ipairs(_accentObjs) do
+		local id = tostring(r.obj)
+		if _activeTweens[id] then
+			pcall(function() _activeTweens[id]:Cancel() end)
+			_activeTweens[id] = nil
+		end
+	end
+	for _, r in ipairs(_accentBGObjs) do
+		local id = tostring(r.obj)
+		if _activeTweens[id] then
+			pcall(function() _activeTweens[id]:Cancel() end)
+			_activeTweens[id] = nil
+		end
+	end
+	for _, r in ipairs(_toggleRefs) do
+		pcall(function()
+			for _, obj in ipairs({r.dot, r.pill}) do
+				local id = tostring(obj)
+				if _activeTweens[id] then
+					pcall(function() _activeTweens[id]:Cancel() end)
+					_activeTweens[id] = nil
+				end
+			end
+		end)
+	end
+end
 local TQ  = TweenInfo.new(0.18, Enum.EasingStyle.Quad,  Enum.EasingDirection.Out)
 local TQS = TweenInfo.new(0.28, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
 
@@ -270,9 +309,7 @@ function Lib:CreateWindow(cfg)
 end
 
 function Lib:SetAccentColor(c)
-	local stopTI = TweenInfo.new(0)
-	for _, r in ipairs(_accentObjs)   do pcall(function() TS:Create(r.obj, stopTI, {[r.prop]=r.obj[r.prop]}):Play() end) end
-	for _, r in ipairs(_accentBGObjs) do pcall(function() TS:Create(r.obj, stopTI, {[r.prop]=r.obj[r.prop]}):Play() end) end
+	cancelTweensOnAccentObjs()
 	applyAcc(c)
 	self._glow.ImageColor3 = c
 	if self._logoTitle then
