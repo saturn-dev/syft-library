@@ -720,14 +720,13 @@ function Lib:AddTab(cfg)
 					end
 
 					ob.MouseEnter:Connect(function()
-					ob.MouseEnter:Connect(function()
 						TS:Create(ob,_TQ,{BackgroundTransparency=0.5,BackgroundColor3=Color3.fromRGB(44,44,60)}):Play()
 						TS:Create(ol,_TQ,{TextColor3=T.TEXT}):Play()
 					end)
 					ob.MouseLeave:Connect(function()
-					ob.MouseLeave:Connect(function()
 						local s2=isMulti and multiSelected[opt] or (not isMulti and opt==selected)
-						ol.TextColor3=s2 and T.ACC or T.TEXT
+						TS:Create(ob,_TQ,{BackgroundTransparency=s2 and 0.6 or 1}):Play()
+						TS:Create(ol,_TQ,{TextColor3=s2 and T.ACC or T.TEXT}):Play()
 					end)
 					ob.Activated:Connect(function()
 						if isMulti then
