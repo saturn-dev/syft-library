@@ -920,11 +920,31 @@ function Lib:AddTab(cfg)
 			keyBtn.TextColor3=T.TEXT
 			corner(keyBtn,6)
 
-			local function keyName(k)
-				local n=tostring(k):gsub("Enum.KeyCode.","")
-				return n
+			-- mouse bind name lookup (populated if MouseBinds=true)
+			local mouseNames = {
+				[Enum.UserInputType.MouseButton1] = "LMB",
+				[Enum.UserInputType.MouseButton2] = "RMB",
+				[Enum.UserInputType.MouseButton3] = "MMB",
+				[Enum.UserInputType.MouseButton4] = "Mouse4",
+				[Enum.UserInputType.MouseButton5] = "Mouse5",
+			}
+
+			local function bindName(k)
+				if mouseNames[k] then return mouseNames[k] end
+				return tostring(k):gsub("Enum.KeyCode.",""):gsub("Enum.UserInputType.","")
 			end
-			keyBtn.Text=keyName(curKey)
+			keyBtn.Text=bindName(curKey)
+
+			local function applyBind(newKey, fromMouse)
+				curKey=newKey; listening=false
+				keyBtn.Text=bindName(newKey)
+				TS:Create(keyBtn,_TQ,{BackgroundColor3=T.BG3}):Play()
+				keyBtn.TextColor3=T.TEXT
+				if c.IsToggleKey and win and not fromMouse then
+					win._keybind=newKey
+				end
+				if c.Callback then c.Callback(newKey) end
+			end
 
 			keyBtn.Activated:Connect(function()
 				if listening then return end
@@ -937,15 +957,9 @@ function Lib:AddTab(cfg)
 			UIS.InputBegan:Connect(function(i, gp)
 				if not listening then return end
 				if i.UserInputType==Enum.UserInputType.Keyboard then
-					curKey=i.KeyCode
-					listening=false
-					keyBtn.Text=keyName(curKey)
-					TS:Create(keyBtn,_TQ,{BackgroundColor3=T.BG3}):Play()
-					keyBtn.TextColor3=T.TEXT
-					if c.IsToggleKey and win then
-						win._keybind=curKey
-					end
-					if c.Callback then c.Callback(curKey) end
+					applyBind(i.KeyCode, false)
+				elseif c.MouseBinds and mouseNames[i.UserInputType] then
+					applyBind(i.UserInputType, true)
 				end
 			end)
 
@@ -954,18 +968,36 @@ function Lib:AddTab(cfg)
 
 			local kbKey="keybind_"..stName.."_"..self._itemCt
 			win:_regConfig(kbKey,
-				function() return tostring(curKey):gsub("Enum.KeyCode.","") end,
+				function()
+					local mn=mouseNames[curKey]
+					if mn then return "MOUSE:"..mn end
+					return tostring(curKey):gsub("Enum.KeyCode.","")
+				end,
 				function(v)
-					local ok2,k=pcall(function() return Enum.KeyCode[v] end)
-					if ok2 and k then
-						curKey=k; keyBtn.Text=keyName(k)
-						if c.IsToggleKey and win then win._keybind=k end
-						if c.Callback then c.Callback(k) end
+					if type(v)=="string" and v:sub(1,6)=="MOUSE:" then
+						local mname=v:sub(7)
+						for uit,nm in pairs(mouseNames) do
+							if nm==mname then
+								curKey=uit; keyBtn.Text=nm
+								if c.Callback then c.Callback(uit) end
+								return
+							end
+						end
+					else
+						local ok2,k=pcall(function() return Enum.KeyCode[v] end)
+						if ok2 and k then
+							curKey=k; keyBtn.Text=bindName(k)
+							if c.IsToggleKey and win then win._keybind=k end
+							if c.Callback then c.Callback(k) end
+						end
 					end
 				end)
 			return {
 				GetValue=function() return curKey end,
-				SetValue=function(_,k) curKey=k; keyBtn.Text=keyName(k) end,
+				SetValue=function(_,k)
+					curKey=k
+					keyBtn.Text=bindName(k)
+				end,
 			}
 		end
 
