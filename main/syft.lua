@@ -3,7 +3,6 @@ local UIS = game:GetService("UserInputService")
 local PL  = game:GetService("Players")
 local RS  = game:GetService("RunService")
 
--- ─── Theme (mutable) ─────────────────────────────────────────────────────────
 local T = {
 	BG      = Color3.fromRGB(16,16,20),
 	BG2     = Color3.fromRGB(14,14,18),
@@ -15,13 +14,9 @@ local T = {
 	MUTED   = Color3.fromRGB(65,64,75),
 }
 
--- ─── Accent registry ────────────────────────────────────────────────────────
--- regAcc(obj,prop)    → updates to T.ACC on SetAccentColor
--- regAccBG(obj,prop)  → updates to T.ACC_BG on SetAccentColor
--- regToggle(dot,pill,togFn) → live-updates toggle visuals when color changes
 local _accentObjs   = {}
 local _accentBGObjs = {}
-local _toggleRefs   = {} -- {dot, pill, getState}
+local _toggleRefs   = {}
 
 local function regAcc(obj, prop)   table.insert(_accentObjs,   {obj=obj,   prop=prop}) end
 local function regAccBG(obj, prop) table.insert(_accentBGObjs, {obj=obj,   prop=prop}) end
@@ -29,32 +24,25 @@ local function regToggle(dot, pill, getState)
 	table.insert(_toggleRefs, {dot=dot, pill=pill, getState=getState})
 end
 
-local _instantTween = TweenInfo.new(0)
 local function applyAcc(c)
 	T.ACC    = c
 	T.ACC_BG = Color3.fromRGB(math.floor(c.R*255*0.5), math.floor(c.G*255*0.5), math.floor(c.B*255*0.55))
-	for _, r in ipairs(_accentObjs) do
-		pcall(function() TS:Create(r.obj, _instantTween, {[r.prop]=c}):Play() end)
-	end
-	for _, r in ipairs(_accentBGObjs) do
-		pcall(function() TS:Create(r.obj, _instantTween, {[r.prop]=T.ACC_BG}):Play() end)
-	end
+	for _, r in ipairs(_accentObjs)   do pcall(function() r.obj[r.prop] = c       end) end
+	for _, r in ipairs(_accentBGObjs) do pcall(function() r.obj[r.prop] = T.ACC_BG end) end
 	for _, r in ipairs(_toggleRefs) do
 		pcall(function()
 			if r.getState() then
-				TS:Create(r.dot,  _instantTween, {BackgroundColor3=c}):Play()
-				TS:Create(r.pill, _instantTween, {BackgroundColor3=T.ACC_BG}):Play()
+				r.dot.BackgroundColor3  = c
+				r.pill.BackgroundColor3 = T.ACC_BG
 			end
 		end)
 	end
 end
 
--- ─── Tweens ──────────────────────────────────────────────────────────────────
 local function tw(obj, t, props) TS:Create(obj, t, props):Play() end
 local TQ  = TweenInfo.new(0.18, Enum.EasingStyle.Quad,  Enum.EasingDirection.Out)
 local TQS = TweenInfo.new(0.28, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
 
--- ─── Helpers ─────────────────────────────────────────────────────────────────
 local function corner(p, r)
 	local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, r or 6); c.Parent = p; return c
 end
@@ -73,13 +61,11 @@ local function newImg(parent, props)
 	for k,v in pairs(props or {}) do i[k]=v end; i.Parent=parent; return i
 end
 
--- ─── Dragging (with drag-guard: won't drag if mousedown started inside a child that is a button) ──
 local function makeDraggable(frame, handle)
 	handle = handle or frame
 	local drag, dragInput, startPos, startMouse
 	handle.InputBegan:Connect(function(i)
 		if i.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
-		-- only drag if the handle itself was clicked (not a child button)
 		drag = true
 		startPos   = frame.Position
 		startMouse = i.Position
@@ -98,9 +84,6 @@ local function makeDraggable(frame, handle)
 	end)
 end
 
--- ════════════════════════════════════════════════════════════════════════════
--- LIBRARY
--- ════════════════════════════════════════════════════════════════════════════
 local Lib = {}
 Lib.__index = Lib
 
@@ -113,14 +96,12 @@ function Lib:CreateWindow(cfg)
 	self._keybind   = cfg.ToggleKey or Enum.KeyCode.RightShift
 	self._scale     = 1
 
-	-- ── ScreenGui ─────────────────────────────────────────────────────────
 	local sg = Instance.new("ScreenGui")
 	sg.Name = "SyftLib"; sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling; sg.ResetOnSpawn = false
 	local ok, cg = pcall(function() return game:GetService("CoreGui") end)
 	sg.Parent = ok and cg or PL.LocalPlayer.PlayerGui
 	self._sg = sg
 
-	-- Toast ScreenGui (separate so toasts float above everything)
 	local tsg = Instance.new("ScreenGui")
 	tsg.Name="SyftToasts"; tsg.ZIndexBehavior=Enum.ZIndexBehavior.Sibling; tsg.ResetOnSpawn=false
 	tsg.Parent = ok and cg or PL.LocalPlayer.PlayerGui
@@ -135,9 +116,6 @@ function Lib:CreateWindow(cfg)
 	self._toastHolder = toastHolder
 	self._toastCount  = 0
 
-	-- ── Root with UIScale ────────────────────────────────────────────────
-	-- UIScale on root itself; position is pure pixel offset from screen center
-	-- This avoids jitter: no scale-based UDim mixing with UIScale
 	local root = Instance.new("Frame")
 	root.Name="Root"; root.BackgroundColor3=T.BG; root.BorderSizePixel=0
 	root.AnchorPoint=Vector2.new(0.5,0.5)
@@ -150,14 +128,12 @@ function Lib:CreateWindow(cfg)
 	local uiScale = Instance.new("UIScale"); uiScale.Scale=1; uiScale.Parent=root
 	self._uiScale = uiScale
 
-	-- Inner clip (clips the content but not the root corners)
 	local rootClip = Instance.new("Frame")
 	rootClip.BackgroundColor3=T.BG; rootClip.BorderSizePixel=0
 	rootClip.Size=UDim2.new(1,0,1,0); rootClip.ClipsDescendants=true
 	rootClip.Parent=root; corner(rootClip,10)
 	self._rootClip = rootClip
 
-	-- glow
 	local glow = newImg(root, {
 		Name="Glow", Position=UDim2.new(-0.03,-10,-0.06,-10),
 		Size=UDim2.new(1.06,20,1.12,20), ZIndex=0,
@@ -168,7 +144,6 @@ function Lib:CreateWindow(cfg)
 	regAcc(glow, "ImageColor3")
 	corner(glow,20)
 
-	-- draghandle = top header area only (not entire window, so sliders don't drag)
 	local dragHandle = newFrame(rootClip, {
 		Name="DragHandle", Size=UDim2.new(1,0,0,100), ZIndex=10,
 		BackgroundColor3=T.BG2, BackgroundTransparency=1,
@@ -176,15 +151,11 @@ function Lib:CreateWindow(cfg)
 	self._dragHandle = dragHandle
 	makeDraggable(root, dragHandle)
 
-	-- ── Sidebar ───────────────────────────────────────────────────────────
 	local sidebar = Instance.new("Frame")
 	sidebar.Name="Sidebar"; sidebar.BackgroundColor3=T.BG; sidebar.BorderSizePixel=0
 	sidebar.Size=UDim2.new(0,208,1,0); sidebar.ZIndex=2; sidebar.Parent=rootClip
 
-	-- Fix corner rounding: sidebar shares left corners with root, right corners must be square
 	local sbCorner = corner(sidebar,10)
-	-- Override: use a 0px corner so we can manually handle via two overlapping frames
-	-- Actually we use a full corner and then cover the right side corners with a square patch
 	local sbPatch = Instance.new("Frame")
 	sbPatch.BackgroundColor3=T.BG; sbPatch.BorderSizePixel=0
 	sbPatch.Position=UDim2.new(1,-12,0,0); sbPatch.Size=UDim2.new(0,12,1,0); sbPatch.ZIndex=2
@@ -194,7 +165,6 @@ function Lib:CreateWindow(cfg)
 	sep.BackgroundColor3=T.SEP; sep.BorderSizePixel=0
 	sep.Position=UDim2.new(1,-1,0,0); sep.Size=UDim2.new(0,1,1,0); sep.ZIndex=3; sep.Parent=sidebar
 
-	-- Logo
 	local logoArea = newFrame(sidebar,{Name="Logo",Size=UDim2.new(1,0,0,58),ZIndex=3})
 	local logoLbl = Instance.new("TextLabel")
 	logoLbl.BackgroundTransparency=1; logoLbl.BorderSizePixel=0
@@ -217,7 +187,6 @@ function Lib:CreateWindow(cfg)
 	logoLine.BackgroundColor3=T.SEP; logoLine.BorderSizePixel=0
 	logoLine.Position=UDim2.new(0,0,0,58); logoLine.Size=UDim2.new(1,0,0,1); logoLine.ZIndex=3; logoLine.Parent=sidebar
 
-	-- Nav scroll
 	local navScroll = Instance.new("ScrollingFrame")
 	navScroll.BackgroundTransparency=1; navScroll.BorderSizePixel=0
 	navScroll.Position=UDim2.new(0,0,0,60); navScroll.Size=UDim2.new(1,0,1,-122)
@@ -225,10 +194,8 @@ function Lib:CreateWindow(cfg)
 	navScroll.ScrollBarThickness=0; navScroll.ZIndex=3; navScroll.Parent=sidebar
 	self._navScroll=navScroll
 	Instance.new("UIListLayout",navScroll).SortOrder=Enum.SortOrder.LayoutOrder
-	-- padding
 	do local p=Instance.new("UIPadding",navScroll); p.PaddingLeft=UDim.new(0,10); p.PaddingRight=UDim.new(0,10); p.PaddingTop=UDim.new(0,6) end
 
-	-- Footer
 	local footer = Instance.new("Frame")
 	footer.Name="Footer"; footer.BackgroundColor3=T.BG; footer.BorderSizePixel=0
 	footer.AnchorPoint=Vector2.new(0,1); footer.Position=UDim2.new(0,0,1,0)
@@ -262,23 +229,18 @@ function Lib:CreateWindow(cfg)
 		end)
 	end
 
-	-- ── Content pane ──────────────────────────────────────────────────────
-	-- Content must NOT clip so dropdowns overflow correctly
 	local content = Instance.new("Frame")
 	content.Name="Content"; content.BackgroundColor3=T.BG2; content.BorderSizePixel=0
 	content.Position=UDim2.new(0,210,0,0); content.Size=UDim2.new(1,-210,1,0)
 	content.ZIndex=1; content.ClipsDescendants=false; content.Parent=rootClip
 	corner(content,10)
-	-- Square off the left side of content (it butts against sidebar)
 	local cPatch=Instance.new("Frame",content)
 	cPatch.BackgroundColor3=T.BG2; cPatch.BorderSizePixel=0
 	cPatch.Size=UDim2.new(0,12,1,0); cPatch.ZIndex=1
 	self._content=content
 
-	-- header (this is also the drag area)
 	local header=newFrame(content,{Name="Header",BackgroundColor3=T.BG2,BackgroundTransparency=0,Size=UDim2.new(1,0,0,100),ZIndex=2,ClipsDescendants=false})
 	self._header=header
-	-- move dragHandle to be visually over header
 	dragHandle.Parent = header
 	dragHandle.Size   = UDim2.new(1,0,0,60)
 
@@ -291,15 +253,12 @@ function Lib:CreateWindow(cfg)
 
 	do local hLine=Instance.new("Frame",header); hLine.BackgroundColor3=T.SEP; hLine.BorderSizePixel=0; hLine.Position=UDim2.new(0,0,1,0); hLine.Size=UDim2.new(1,0,0,1); hLine.ZIndex=4 end
 
-	-- tab frame holder
 	local tabHolder=newFrame(content,{Name="TabHolder",Position=UDim2.new(0,0,0,102),Size=UDim2.new(1,0,1,-102),ZIndex=1,ClipsDescendants=false})
 	self._tabHolder=tabHolder
 
-	-- ── Minimap ───────────────────────────────────────────────────────────
 	self:_BuildMap()
 	if cfg.Map then self:SetMapVisible(true) end
 
-	-- ── Keybind toggle ────────────────────────────────────────────────────
 	UIS.InputBegan:Connect(function(i, gp)
 		if gp then return end
 		if i.KeyCode == self._keybind then
@@ -310,11 +269,12 @@ function Lib:CreateWindow(cfg)
 	return self
 end
 
--- ─── Public API ──────────────────────────────────────────────────────────────
 function Lib:SetAccentColor(c)
+	local stopTI = TweenInfo.new(0)
+	for _, r in ipairs(_accentObjs)   do pcall(function() TS:Create(r.obj, stopTI, {[r.prop]=r.obj[r.prop]}):Play() end) end
+	for _, r in ipairs(_accentBGObjs) do pcall(function() TS:Create(r.obj, stopTI, {[r.prop]=r.obj[r.prop]}):Play() end) end
 	applyAcc(c)
 	self._glow.ImageColor3 = c
-	-- refresh logo
 	if self._logoTitle then
 		local title = self._logoTitle
 		local dot = title:find("%.")
@@ -324,9 +284,7 @@ function Lib:SetAccentColor(c)
 				T.TEXT.R*255,T.TEXT.G*255,T.TEXT.B*255,b, c.R*255,c.G*255,c.B*255,a)
 		end
 	end
-	-- refresh active nav icon
-	if self._active then tw(self._active._navIcon,TQ,{ImageColor3=c}) end
-	-- refresh active subtab underline
+	if self._active then self._active._navIcon.ImageColor3 = c end
 	for _, child in ipairs(self._stBar:GetChildren()) do
 		if child:IsA("TextButton") then
 			local l=child:FindFirstChildOfClass("Frame")
@@ -347,7 +305,6 @@ function Lib:SetToggleKey(key)
 	self._keybind = key
 end
 
--- ─── Toast ───────────────────────────────────────────────────────────────────
 function Lib:Toast(cfg)
 	cfg = cfg or {}
 	self._toastCount = (self._toastCount or 0) + 1
@@ -363,21 +320,17 @@ function Lib:Toast(cfg)
 	toast.Parent = self._toastHolder
 	corner(toast, 8)
 
-	-- accent left bar
 	local bar = Instance.new("Frame",toast)
 	bar.BackgroundColor3 = T.ACC; bar.BorderSizePixel=0
 	bar.Size=UDim2.new(0,3,1,0); bar.ZIndex=2
 	regAcc(bar,"BackgroundColor3")
 	corner(bar,3)
 
-	-- title
 	newLabel(toast,{Position=UDim2.new(0,14,0,10),Size=UDim2.new(1,-28,0,20),
 		Text=cfg.Title or "Notification",TextColor3=T.TEXT,TextSize=14,Font=Enum.Font.GothamBold,ZIndex=3})
-	-- message
 	newLabel(toast,{Position=UDim2.new(0,14,0,30),Size=UDim2.new(1,-28,0,18),
 		Text=cfg.Message or "",TextColor3=T.MUTED,TextSize=12,ZIndex=3})
 
-	-- progress bar at bottom
 	local prog = Instance.new("Frame",toast)
 	prog.BackgroundColor3=T.SEP; prog.BorderSizePixel=0
 	prog.AnchorPoint=Vector2.new(0,1); prog.Position=UDim2.new(0,0,1,0)
@@ -387,14 +340,11 @@ function Lib:Toast(cfg)
 	regAcc(progFill,"BackgroundColor3")
 	corner(progFill,2)
 
-	-- start off-screen to the right, then slide in
 	toast.Position = UDim2.new(1,320,0,0)
 	tw(toast, TweenInfo.new(0.35, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Size=UDim2.new(1,0,0,62), Position=UDim2.new(0,0,0,0)})
-	-- progress drain after slide-in
 	task.delay(0.35, function()
 		tw(progFill, TweenInfo.new(dur, Enum.EasingStyle.Linear), {Size=UDim2.new(0,0,1,0)})
 	end)
-	-- slide out right then collapse height for smooth stack shrink
 	task.delay(dur + 0.35, function()
 		if not toast or not toast.Parent then return end
 		tw(toast, TweenInfo.new(0.28, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Position=UDim2.new(1,320,0,0)})
@@ -406,7 +356,6 @@ function Lib:Toast(cfg)
 	end)
 end
 
--- ─── Category ────────────────────────────────────────────────────────────────
 function Lib:AddCategory(title)
 	local lbl = Instance.new("TextLabel",self._navScroll)
 	lbl.BackgroundTransparency=1; lbl.BorderSizePixel=0
@@ -416,9 +365,6 @@ function Lib:AddCategory(title)
 	do local p=Instance.new("UIPadding",lbl); p.PaddingTop=UDim.new(0,8); p.PaddingLeft=UDim.new(0,4) end
 end
 
--- ════════════════════════════════════════════════════════════════════════════
--- ADD TAB
--- ════════════════════════════════════════════════════════════════════════════
 function Lib:AddTab(cfg)
 	cfg = cfg or {}
 	local win = self
@@ -456,7 +402,6 @@ function Lib:AddTab(cfg)
 
 		local st = { _name=stName, _order=i, _frame=stFrame, _scroll=scroll, _itemCt=0 }
 
-		-- ── AddSection ────────────────────────────────────────────────
 		function st:AddSection(title)
 			self._itemCt=self._itemCt+1
 			local lbl=Instance.new("TextLabel",self._scroll)
@@ -466,7 +411,6 @@ function Lib:AddTab(cfg)
 			do local p=Instance.new("UIPadding",lbl); p.PaddingTop=UDim.new(0,6) end
 		end
 
-		-- ── AddToggle ─────────────────────────────────────────────────
 		function st:AddToggle(c)
 			c=c or {}
 			self._itemCt=self._itemCt+1
@@ -504,7 +448,6 @@ function Lib:AddTab(cfg)
 				if c.Callback then c.Callback(v) end
 			end
 
-			-- Register so SetAccentColor can live-update ON toggles
 			regToggle(dot, pill, function() return toggled end)
 
 			pill.Activated:Connect(function() setToggle(not toggled) end)
@@ -517,7 +460,6 @@ function Lib:AddTab(cfg)
 		return {SetValue=function(_,v) setToggle(v) end, GetValue=function() return toggled end}
 		end
 
-		-- ── AddSlider ─────────────────────────────────────────────────
 		function st:AddSlider(c)
 			c=c or {}
 			self._itemCt=self._itemCt+1
@@ -567,8 +509,6 @@ function Lib:AddTab(cfg)
 				if c.Callback then c.Callback(v) end
 			end
 
-			-- Use InputBegan on the track only; InputChanged on UIS only while dragging
-			-- This prevents the global UIS.InputChanged from triggering the main window drag
 			track.InputBegan:Connect(function(i)
 				if i.UserInputType==Enum.UserInputType.MouseButton1 then
 					dragging=true
@@ -582,7 +522,6 @@ function Lib:AddTab(cfg)
 					tw(handle,TQ,{Size=UDim2.new(0,12,0,12)})
 				end
 			end)
-			-- CRITICAL: only move slider when dragging=true, otherwise skip
 			UIS.InputChanged:Connect(function(i)
 				if not dragging then return end
 				if i.UserInputType==Enum.UserInputType.MouseMovement then
@@ -604,7 +543,6 @@ function Lib:AddTab(cfg)
 			}
 		end
 
-		-- ── AddButton ─────────────────────────────────────────────────
 		function st:AddButton(c)
 			c=c or {}
 			self._itemCt=self._itemCt+1
@@ -629,8 +567,6 @@ function Lib:AddTab(cfg)
 			return {Frame=btn}
 		end
 
-		-- ── AddDropdown ───────────────────────────────────────────────
-		-- SelectMode=true → multi-select; GetValue returns {opt=bool}
 		function st:AddDropdown(c)
 			c=c or {}
 			self._itemCt=self._itemCt+1
@@ -676,7 +612,6 @@ function Lib:AddTab(cfg)
 				TextTruncate=Enum.TextTruncate.AtEnd,
 			})
 
-			-- Arrow on RIGHT side
 			local arrowImg=newImg(dd,{
 				Name="DDArrow",
 				AnchorPoint=Vector2.new(1,0.5), Position=UDim2.new(1,-8,0.5,0),
@@ -699,7 +634,6 @@ function Lib:AddTab(cfg)
 			end
 
 			dd.Activated:Connect(function()
-				-- clicking button while open → close
 				if isOpen then closeDD(); return end
 				isOpen=true
 				tw(arrowImg,TQ,{Rotation=180})
@@ -846,7 +780,6 @@ function Lib:AddTab(cfg)
 			}
 		end
 
-		-- ── AddTextbox ───────────────────────────────────────────────
 		function st:AddTextbox(c)
 			c=c or {}
 			self._itemCt=self._itemCt+1
@@ -860,7 +793,6 @@ function Lib:AddTab(cfg)
 			newLabel(frame,{Position=UDim2.new(0,14,0,36),Size=UDim2.new(0.55,0,0,18),
 				Text=c.Description or "",TextColor3=T.MUTED,TextSize=12,ZIndex=4})
 
-			-- Input container
 			local inputBg=Instance.new("Frame",frame)
 			inputBg.BackgroundColor3=T.BG3; inputBg.BorderSizePixel=0
 			inputBg.AnchorPoint=Vector2.new(1,0.5); inputBg.Position=UDim2.new(1,-14,0.5,0)
@@ -876,7 +808,6 @@ function Lib:AddTab(cfg)
 			box.Text=c.Default or ""; box.ClearTextOnFocus=c.ClearOnFocus or false
 			box.ZIndex=6; box.TextXAlignment=Enum.TextXAlignment.Left
 
-			-- Focus highlight
 			box.Focused:Connect(function()
 				tw(inputBg,TQ,{BackgroundColor3=Color3.fromRGB(30,30,42)})
 				local stroke=Instance.new("UIStroke",inputBg)
@@ -899,7 +830,6 @@ function Lib:AddTab(cfg)
 			}
 		end
 
-		-- ── AddDivider ────────────────────────────────────────────────
 		function st:AddDivider(c)
 			c=c or {}
 			self._itemCt=self._itemCt+1
@@ -908,7 +838,6 @@ function Lib:AddTab(cfg)
 			wrap.LayoutOrder=self._itemCt; wrap.ZIndex=3
 
 			if c.Title and c.Title ~= "" then
-				-- Text divider: label with lines on each side
 				wrap.Size=UDim2.new(1,0,0,28)
 				local lineL=Instance.new("Frame",wrap)
 				lineL.BackgroundColor3=T.SEP; lineL.BorderSizePixel=0
@@ -925,7 +854,6 @@ function Lib:AddTab(cfg)
 				lineR.AnchorPoint=Vector2.new(1,0.5); lineR.Position=UDim2.new(1,0,0.5,0)
 				lineR.Size=UDim2.new(0.28,-8,0,1); lineR.ZIndex=3
 			else
-				-- Plain line divider
 				wrap.Size=UDim2.new(1,0,0,16)
 				local line=Instance.new("Frame",wrap)
 				line.BackgroundColor3=T.SEP; line.BorderSizePixel=0
@@ -934,7 +862,6 @@ function Lib:AddTab(cfg)
 			end
 		end
 
-		-- ── AddKeybind ────────────────────────────────────────────────
 		function st:AddKeybind(c)
 			c=c or {}
 			self._itemCt=self._itemCt+1
@@ -979,7 +906,6 @@ function Lib:AddTab(cfg)
 					keyBtn.Text=keyName(curKey)
 					tw(keyBtn,TQ,{BackgroundColor3=T.BG3})
 					keyBtn.TextColor3=T.TEXT
-					-- if this keybind is set as the window toggle key, update it
 					if c.IsToggleKey and win then
 						win._keybind=curKey
 					end
@@ -1057,9 +983,6 @@ function Lib:_BuildSTBtn(tab,st,order)
 	btn.MouseLeave:Connect(function() if tab._activeST~=st then tw(btn,TQ,{TextColor3=T.MUTED}) end end)
 end
 
--- ════════════════════════════════════════════════════════════════════════════
--- MINIMAP
--- ════════════════════════════════════════════════════════════════════════════
 function Lib:_BuildMap()
 	self._mapConn=nil; self._mapFrames={}; self._mapPos={}
 	local mg=Instance.new("ScreenGui"); mg.Name="SyftMap"; mg.ZIndexBehavior=Enum.ZIndexBehavior.Sibling; mg.ResetOnSpawn=false
@@ -1076,20 +999,15 @@ function Lib:_BuildMap()
 	local grid=newImg(mapFrame,{Size=UDim2.new(1,0,1,0),Image="rbxassetid://2045685837",ImageTransparency=0.88,ScaleType=Enum.ScaleType.Fit,ZIndex=1})
 	corner(grid,10)
 
-	-- Self blip: arrowFrame rotates each frame; flash is INSIDE arrowFrame so it
-	-- rotates with the arrow (same as reference image) — NO pulsing animation
 	local selfF=newFrame(mapFrame,{
 		Name="Self",AnchorPoint=Vector2.new(0.5,0.5),
 		Position=UDim2.new(0.5,0,0.5,0),Size=UDim2.new(0,26,0,26),ZIndex=5,
 	})
-	-- arrowFrame is what rotates each frame
 	local arrowFrame=newFrame(selfF,{
 		Name="ArrowFrame",
 		AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0),
 		Size=UDim2.new(1,0,1,0), ZIndex=5,
 	})
-	-- Flash cone — child of arrowFrame so it rotates WITH the arrow, no animation
-	-- Position uses the original {-2.04,0},{-5.88,0} values from the reference GUI
 	local flash=newImg(arrowFrame,{
 		Name="Flash",
 		AnchorPoint=Vector2.new(0,0),
@@ -1099,7 +1017,6 @@ function Lib:_BuildMap()
 		ImageColor3=T.ACC, ImageTransparency=0.72, ZIndex=4,
 	})
 	regAcc(flash,"ImageColor3")
-	-- Arrow icon on top, also child of arrowFrame
 	local selfArrowImg=newImg(arrowFrame,{
 		AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.new(0.5,0,0.5,0),
 		Size=UDim2.new(1,0,1,0),
@@ -1107,17 +1024,14 @@ function Lib:_BuildMap()
 		ImageColor3=T.ACC, ZIndex=6,
 	})
 	regAcc(selfArrowImg,"ImageColor3")
-	self._selfArrow=arrowFrame   -- rotate this frame each frame
+	self._selfArrow=arrowFrame
 
-	-- Player template — Name "HS" on headshot so FindFirstChild("HS") works
 	local pt=newFrame(mapFrame,{Name="PT",AnchorPoint=Vector2.new(0.5,0.5),Size=UDim2.new(0,60,0,52),Visible=false,ZIndex=4})
-	-- Outer ring (accent colored)
 	local ring=Instance.new("Frame",pt); ring.Name="Ring"
 	ring.BackgroundColor3=T.ACC; ring.BorderSizePixel=0
 	ring.AnchorPoint=Vector2.new(0.5,0.5); ring.Position=UDim2.new(0.5,0,0.5,-4)
 	ring.Size=UDim2.new(0,28,0,28); ring.ZIndex=4; corner(ring,50)
 	regAcc(ring,"BackgroundColor3")
-	-- Headshot — NAMED "HS" so the lookup works
 	local ph=Instance.new("ImageLabel",pt)
 	ph.Name="HS"; ph.BackgroundColor3=Color3.fromRGB(30,30,40); ph.BorderSizePixel=0
 	ph.AnchorPoint=Vector2.new(0.5,0.5); ph.Position=UDim2.new(0.5,0,0.5,-4)
@@ -1178,17 +1092,13 @@ function Lib:_StartMap()
 end
 
 function Lib:_MapAddPlayer(p)
-	-- Don't duplicate
 	if self._mapFrames[p] then return end
 	local f=self._pt:Clone(); f.Visible=false; f.Name="Player_"..p.Name; f.Parent=self._mapFrame
-	-- Register the cloned ring for live accent updates
 	local ring2=f:FindFirstChild("Ring")
 	if ring2 then regAcc(ring2,"BackgroundColor3") end
 	local nl=f:FindFirstChild("PN"); if nl then nl.Text=p.DisplayName end
-	-- Load headshot — search for ImageLabel named "HS"
 	local hs=f:FindFirstChild("HS")
 	task.spawn(function()
-		-- retry a few times in case the player is still loading
 		for attempt=1,5 do
 			local ok2,content=pcall(function()
 				return PL:GetUserThumbnailAsync(p.UserId,Enum.ThumbnailType.HeadShot,Enum.ThumbnailSize.Size420x420)
@@ -1203,7 +1113,6 @@ function Lib:_MapAddPlayer(p)
 	self._mapFrames[p]=f
 end
 
--- ─── Config system ──────────────────────────────────────────────────────────
 function Lib:_regConfig(key, getFn, setFn)
 	if not self._configItems then self._configItems={} end
 	self._configItems[key]={get=getFn, set=setFn}
@@ -1272,11 +1181,9 @@ end
 
 function Lib:Destroy()
 	if self._mapConn then self._mapConn:Disconnect() end
-	-- Completely remove all ScreenGuis from CoreGui / PlayerGui
 	pcall(function() self._sg:Destroy() end)
 	pcall(function() if self._mapGui then self._mapGui:Destroy() end end)
 	pcall(function() if self._tsg   then self._tsg:Destroy()   end end)
-	-- Clear accent registries so GC can collect everything
 	for i=#_accentObjs,1,-1   do _accentObjs[i]=nil   end
 	for i=#_accentBGObjs,1,-1 do _accentBGObjs[i]=nil end
 	for i=#_toggleRefs,1,-1   do _toggleRefs[i]=nil   end
