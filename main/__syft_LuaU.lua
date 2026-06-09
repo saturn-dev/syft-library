@@ -805,8 +805,9 @@ function SyftLib:Open()
                     local clickedSearch=lib.doSearch and over(srHitPos,srHitSz)
                     local clickedTab=false
                     local clickedTabIdx=0
+                    local tabAreaX=lib.px+TITLEW
                     for i=1,numT do
-                        if over(Vector2.new(lib.px+TITLEW+(i-1)*eTW,lib.py),Vector2.new(eTW,TB)) then
+                        if over(Vector2.new(tabAreaX+(i-1)*eTW,lib.py),Vector2.new(eTW,TB)) then
                             clickedTab=true; clickedTabIdx=i; break
                         end
                     end
@@ -825,7 +826,7 @@ function SyftLib:Open()
                             slideRelX=(clickedTabIdx-1)*eTW+8
                             buildSecs()
                         end
-                    elseif clickedTopbar and not openDD then
+                    elseif clickedTopbar and not openDD and not clickedTab and not clickedSearch then
                         lib.sfocus=false
                         drag=true; ds=m2; spx=lib.px; spy=lib.py
                     else
@@ -833,12 +834,25 @@ function SyftLib:Open()
                     end
                 end
 
-                if not d then drag=false end
-
                 -- drag
                 if drag and d then
-                    lib.px=spx+(m2.X-ds.X); lib.py=spy+(m2.Y-ds.Y)
-                    rebuildChrome(); buildSecs()
+                    local newPX=spx+(m2.X-ds.X); local newPY=spy+(m2.Y-ds.Y)
+                    local dx=newPX-lib.px; local dy=newPY-lib.py
+                    lib.px=newPX; lib.py=newPY
+                    rebuildChrome()
+                    -- move all section drawings by delta (no rebuild needed)
+                    if dx~=0 or dy~=0 then
+                        local dv=Vector2.new(dx,dy)
+                        for _,sd in ipairs(secDs) do
+                            if sd.Position then sd.Position=sd.Position+dv
+                            elseif sd.From then sd.From=sd.From+dv; sd.To=sd.To+dv
+                            elseif sd.PointA then sd.PointA=sd.PointA+dv; sd.PointB=sd.PointB+dv; sd.PointC=sd.PointC+dv
+                            end
+                        end
+                    end
+                end
+                if not d and drag then
+                    drag=false; buildSecs()
                 end
 
                 -- search styling
