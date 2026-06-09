@@ -30,6 +30,54 @@ local C = {
 }
 C.acc=C.mauve; C.brd=C.surface1; C.brd2=C.surface2
 
+local THEMES = {
+    Mocha = {
+        base=Color3.fromRGB(24,24,37),mantle=Color3.fromRGB(18,18,28),crust=Color3.fromRGB(14,14,22),
+        surface0=Color3.fromRGB(36,36,54),surface1=Color3.fromRGB(44,44,66),surface2=Color3.fromRGB(54,54,80),
+        overlay0=Color3.fromRGB(108,108,138),overlay1=Color3.fromRGB(127,127,159),
+        text=Color3.fromRGB(205,214,244),subtext1=Color3.fromRGB(166,173,200),subtext0=Color3.fromRGB(147,153,178),
+        lavender=Color3.fromRGB(180,190,254),acc=Color3.fromRGB(203,166,247),
+    },
+    Midnight = {
+        base=Color3.fromRGB(10,10,20),mantle=Color3.fromRGB(6,6,14),crust=Color3.fromRGB(4,4,10),
+        surface0=Color3.fromRGB(20,22,40),surface1=Color3.fromRGB(28,30,52),surface2=Color3.fromRGB(36,40,65),
+        overlay0=Color3.fromRGB(90,100,140),overlay1=Color3.fromRGB(110,120,160),
+        text=Color3.fromRGB(210,215,255),subtext1=Color3.fromRGB(160,170,210),subtext0=Color3.fromRGB(130,140,180),
+        lavender=Color3.fromRGB(160,180,255),acc=Color3.fromRGB(100,140,255),
+    },
+    Nord = {
+        base=Color3.fromRGB(46,52,64),mantle=Color3.fromRGB(36,42,52),crust=Color3.fromRGB(28,34,44),
+        surface0=Color3.fromRGB(59,66,82),surface1=Color3.fromRGB(67,76,94),surface2=Color3.fromRGB(76,86,106),
+        overlay0=Color3.fromRGB(136,192,208),overlay1=Color3.fromRGB(129,161,193),
+        text=Color3.fromRGB(236,239,244),subtext1=Color3.fromRGB(216,222,233),subtext0=Color3.fromRGB(196,202,213),
+        lavender=Color3.fromRGB(136,192,208),acc=Color3.fromRGB(136,192,208),
+    },
+    Dracula = {
+        base=Color3.fromRGB(40,42,54),mantle=Color3.fromRGB(30,32,44),crust=Color3.fromRGB(22,24,36),
+        surface0=Color3.fromRGB(52,55,70),surface1=Color3.fromRGB(62,65,82),surface2=Color3.fromRGB(72,76,96),
+        overlay0=Color3.fromRGB(98,114,164),overlay1=Color3.fromRGB(110,128,180),
+        text=Color3.fromRGB(248,248,242),subtext1=Color3.fromRGB(200,200,194),subtext0=Color3.fromRGB(160,160,154),
+        lavender=Color3.fromRGB(189,147,249),acc=Color3.fromRGB(189,147,249),
+    },
+    GruvboxDark = {
+        base=Color3.fromRGB(40,40,40),mantle=Color3.fromRGB(30,30,30),crust=Color3.fromRGB(22,22,22),
+        surface0=Color3.fromRGB(50,48,47),surface1=Color3.fromRGB(60,56,54),surface2=Color3.fromRGB(80,73,69),
+        overlay0=Color3.fromRGB(146,131,116),overlay1=Color3.fromRGB(168,153,132),
+        text=Color3.fromRGB(235,219,178),subtext1=Color3.fromRGB(213,196,161),subtext0=Color3.fromRGB(189,174,147),
+        lavender=Color3.fromRGB(131,165,152),acc=Color3.fromRGB(214,93,14),
+    },
+}
+
+local function applyTheme(t)
+    C.base=t.base; C.mantle=t.mantle; C.crust=t.crust
+    C.surface0=t.surface0; C.surface1=t.surface1; C.surface2=t.surface2
+    C.overlay0=t.overlay0; C.overlay1=t.overlay1
+    C.text=t.text; C.subtext1=t.subtext1; C.subtext0=t.subtext0
+    C.lavender=t.lavender; C.mauve=t.acc; C.acc=t.acc
+    C.brd=t.surface1; C.brd2=t.surface2
+end
+
+
 local FONT=Drawing.Fonts.System; local FONTB=Drawing.Fonts.SystemBold
 local FS=14; local FSS=13; local FSX=12
 local TB=38; local IH=28; local BH=30; local SH=44; local DIH=24; local PAD=12; local CP=8
@@ -78,6 +126,15 @@ function SyftLib.new(title)
     return self
 end
 function SyftLib:Search() self.doSearch=true end
+
+function SyftLib:SetTheme(name)
+    local t=THEMES[name]; if t then applyTheme(t) end
+end
+
+function SyftLib:GetThemeNames()
+    local r={}; for k in pairs(THEMES) do table.insert(r,k) end; table.sort(r); return r
+end
+
 
 function SyftLib:Tab(name)
     local tab={name=name,sections={}}
@@ -146,9 +203,9 @@ function SyftLib:Open()
         srBg  =D("Square",{Filled=true,Color=C.surface0,Size=Vector2.new(srW,22),Position=Vector2.new(sx,lib.py+8),Corner=6,ZIndex=7,Visible=true})
         srBrd =D("Square",{Filled=false,Color=C.brd,Size=Vector2.new(srW,22),Position=Vector2.new(sx,lib.py+8),Corner=6,Thickness=1,ZIndex=8,Visible=true})
         -- magnifier: circle + line
-        srIcon=D("Circle",{Radius=5,NumSides=12,Thickness=1.5,Color=C.overlay0,Filled=false,Position=Vector2.new(sx+12,lib.py+19),ZIndex=9,Visible=true})
-        srIconL=D("Line",{From=Vector2.new(sx+16,lib.py+23),To=Vector2.new(sx+19,lib.py+26),Thickness=1.5,Color=C.overlay0,ZIndex=9,Visible=true})
-        srTxt =D("Text",{Text="search...",Size=FSX,Color=C.overlay0,Font=FONT,Position=Vector2.new(sx+22,lib.py+12),ZIndex=9,Visible=true})
+        srIcon=D("Circle",{Radius=4,NumSides=10,Thickness=1.2,Color=C.overlay0,Filled=false,Position=Vector2.new(sx+10,lib.py+19),ZIndex=9,Visible=true})
+        srIconL=D("Line",{From=Vector2.new(sx+13,lib.py+22),To=Vector2.new(sx+16,lib.py+25),Thickness=1.2,Color=C.overlay0,ZIndex=9,Visible=true})
+        srTxt =D("Text",{Text="search...",Size=FSX,Color=C.overlay0,Font=FONT,Position=Vector2.new(sx+20,lib.py+12),ZIndex=9,Visible=true})
     end
 
     local TITLEW=tw(lib.title,FS)+26+(lib.doSearch and srW+14 or 0)
@@ -190,9 +247,9 @@ function SyftLib:Open()
         if srBg then
             local sx2=lib.px+tw(lib.title,FS)+26
             srBg.Position=Vector2.new(sx2,lib.py+8); srBrd.Position=srBg.Position
-            local icX=sx2+12; local icY=lib.py+19
+            local icX=sx2+10; local icY=lib.py+19
             srIcon.Position=Vector2.new(icX,icY)
-            srIconL.From=Vector2.new(icX+4,icY+4); srIconL.To=Vector2.new(icX+7,icY+7)
+            srIconL.From=Vector2.new(icX+3,icY+3); srIconL.To=Vector2.new(icX+6,icY+6)
             srTxt.Position=Vector2.new(sx2+22,lib.py+12)
         end
         for _,td in ipairs(tabDs) do
@@ -268,9 +325,9 @@ function SyftLib:Open()
             mk("Square",{Filled=true,Color=C.mantle,Size=Vector2.new(colW2,ch),Position=Vector2.new(cx,cy),Corner=8,ZIndex=10,Visible=true})
             mk("Square",{Filled=false,Color=C.brd,Size=Vector2.new(colW2,ch),Position=Vector2.new(cx,cy),Corner=8,Thickness=1,ZIndex=11,Visible=true})
             mk("Square",{Filled=true,Color=C.surface0,Size=Vector2.new(colW2,28),Position=Vector2.new(cx,cy),Corner=8,ZIndex=11,Visible=true})
-            mk("Square",{Filled=true,Color=C.surface0,Size=Vector2.new(colW2,10),Position=Vector2.new(cx,cy+18),ZIndex=11,Visible=true})
+            mk("Square",{Filled=true,Color=C.surface0,Size=Vector2.new(colW2-2,12),Position=Vector2.new(cx+1,cy+16),ZIndex=11,Visible=true})
             mk("Square",{Filled=true,Color=C.brd,Size=Vector2.new(colW2,1),Position=Vector2.new(cx,cy+27),ZIndex=12,Visible=true})
-            mk("Square",{Filled=true,Color=C.mauve,Size=Vector2.new(3,16),Position=Vector2.new(cx+1,cy+6),Corner=2,ZIndex=13,Visible=true})
+            mk("Square",{Filled=true,Color=C.mauve,Size=Vector2.new(3,14),Position=Vector2.new(cx+1,cy+7),Corner=2,ZIndex=13,Visible=true})
             mk("Text",{Text=sec.title,Size=FSS,Color=C.text,Font=FONTB,Position=Vector2.new(cx+PAD,cy+7),ZIndex=13,Visible=true})
 
             local iy=cy+34
@@ -285,8 +342,10 @@ function SyftLib:Open()
                         local hasL=(it.label and it.label~="")
                         mk("Square",{Filled=true,Color=C.surface1,Size=Vector2.new(colW2-PAD*2,1),Position=Vector2.new(cx+PAD,iy+8),ZIndex=13,Visible=true})
                         if hasL then
-                            mk("Square",{Filled=true,Color=C.mantle,Size=Vector2.new(tw(it.label,FSX)+10,14),Position=Vector2.new(cx+PAD+12,iy+2),ZIndex=14,Visible=true})
-                            mk("Text",{Text=it.label,Size=FSX,Color=C.overlay0,Font=FONT,Position=Vector2.new(cx+PAD+17,iy+4),ZIndex=15,Visible=true})
+                            local dlw=tw(it.label,FSX)+10
+                            local dlx=cx+math.floor(colW2/2)-math.floor(dlw/2)
+                            mk("Square",{Filled=true,Color=C.mantle,Size=Vector2.new(dlw,14),Position=Vector2.new(dlx,iy+2),ZIndex=14,Visible=true})
+                            mk("Text",{Text=it.label,Size=FSX,Color=C.overlay0,Font=FONT,Position=Vector2.new(dlx+5,iy+4),ZIndex=15,Visible=true})
                         end
                         iy=iy+18
 
@@ -317,11 +376,11 @@ function SyftLib:Open()
                         local cbBrd=mk("Square",{Filled=false,Color=lC(C.surface1,C.mauve,it._at),Size=Vector2.new(16,16),Position=Vector2.new(cx+colW2-PAD-16,iy+6),Corner=4,Thickness=1,ZIndex=14,Visible=true})
                         local bx2=cx+colW2-PAD-16; local by2=iy+6
                         local ck1=mk("Line",{})
-                        ck1.From=Vector2.new(bx2+3,by2+9); ck1.To=Vector2.new(bx2+6,by2+12)
-                        ck1.Color=C.base; ck1.Thickness=2; ck1.ZIndex=15; ck1.Visible=it._at>0.5
+                        ck1.From=Vector2.new(bx2+3,by2+8); ck1.To=Vector2.new(bx2+6,by2+12)
+                        ck1.Color=C.base; ck1.Thickness=1.8; ck1.ZIndex=15; ck1.Visible=it._at>0.5
                         local ck2=mk("Line",{})
-                        ck2.From=Vector2.new(bx2+6,by2+12); ck2.To=Vector2.new(bx2+13,by2+4)
-                        ck2.Color=C.base; ck2.Thickness=2; ck2.ZIndex=15; ck2.Visible=it._at>0.5
+                        ck2.From=Vector2.new(bx2+5,by2+12); ck2.To=Vector2.new(bx2+13,by2+5)
+                        ck2.Color=C.base; ck2.Thickness=1.8; ck2.ZIndex=15; ck2.Visible=it._at>0.5
                         if inV then
                             local capCX=cx; local capCW=colW2; local capIY=iy
                             sloop(function(h)
@@ -384,9 +443,11 @@ function SyftLib:Open()
                                     if capIt.cb then capIt.cb(nv) end
                                 end
                                 capIt._tx=lN(capIt._tx,targetX,0.35)
-                                sTh.Position=Vector2.new(capIt._tx,capIY+22)
-                                sThI.Position=Vector2.new(capIt._tx+4,capIY+26)
                                 local sz2=(hov or h.drag) and 18 or 16
+                                local thCenter=capIt._tx+8
+                                local thTop=capIY+30
+                                sTh.Position=Vector2.new(thCenter-math.floor(sz2/2),thTop-math.floor(sz2/2))
+                                sThI.Position=Vector2.new(thCenter-math.floor((sz2-8)/2),thTop-math.floor((sz2-8)/2))
                                 sTh.Size=Vector2.new(sz2,sz2); sThI.Size=Vector2.new(sz2-8,sz2-8)
                                 sGl.Position=Vector2.new(sF.Position.X-2,capIY+25)
                                 h.wd=d
@@ -714,9 +775,9 @@ function SyftLib:Open()
                 local sx2=lib.px+tw(lib.title,FS)+26
                 if srBg then
                     srBg.Position=Vector2.new(sx2,lib.py+8); srBrd.Position=srBg.Position
-                    local icX=sx2+12; local icY=lib.py+19
+                    local icX=sx2+10; local icY=lib.py+19
             srIcon.Position=Vector2.new(icX,icY)
-            srIconL.From=Vector2.new(icX+4,icY+4); srIconL.To=Vector2.new(icX+7,icY+7)
+            srIconL.From=Vector2.new(icX+3,icY+3); srIconL.To=Vector2.new(icX+6,icY+6)
             srTxt.Position=Vector2.new(sx2+22,lib.py+12)
                 end
                 local d=ismouse1pressed()
