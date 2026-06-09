@@ -415,7 +415,7 @@ function SyftLib:Open()
                                     for _,v in ipairs(it.sel) do if v==opt then return true end end; return false
                                 end)() or (opt==it.sel)
                                 local oh=mk("Square",{Filled=true,Color=C.surface1,Size=Vector2.new(colW2-PAD*2-6,DIH-3),Position=Vector2.new(cx+PAD+3,oY+1),Corner=4,ZIndex=21,Visible=false})
-                                local ot=mk("Text",{Text=opt,Size=FSS,Color=isSel and C.mauve or C.subtext1,Font=isSel and FONTB or FONT,Position=Vector2.new(cx+PAD+isM and 28 or 10,oY+5),ZIndex=22,Visible=false})
+                                local ot=mk("Text",{Text=opt,Size=FSS,Color=isSel and C.mauve or C.subtext1,Font=isSel and FONTB or FONT,Position=Vector2.new(cx+PAD+(isM and 28 or 10),oY+5),ZIndex=22,Visible=false})
                                 local omark=nil
                                 if isM then
                                     omark=mk("Square",{Filled=isSel,Color=isSel and C.mauve or C.surface2,Size=Vector2.new(12,12),Position=Vector2.new(cx+PAD+10,oY+6),Corner=3,ZIndex=22,Visible=false})
