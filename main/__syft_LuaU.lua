@@ -172,15 +172,17 @@ function SyftLib:Open()
         end
     end
 
-    local secDs={}; local loops={}
+    local secDs={}; local secDsPos={}; local secDsLine={}; local loops={}
     lib.dragging=false
     local function clearSecs()
-        for _,d in ipairs(secDs) do d:Remove() end; secDs={}
+        for _,d in ipairs(secDs) do d:Remove() end; secDs={}; secDsPos={}; secDsLine={}
         for _,h in ipairs(loops) do h.dead=true end; loops={}
     end
     local function mk(t,p)
         local o=Drawing.new(t); for k,v in pairs(p) do o[k]=v end
-        table.insert(secDs,o); table.insert(drawings,o); return o
+        table.insert(secDs,o); table.insert(drawings,o)
+        if t=="Line" then table.insert(secDsLine,o) else table.insert(secDsPos,o) end
+        return o
     end
     local function sloop(fn)
         local h={dead=false,wd=false,drag=false,kd={},dH=false,dS=false}
@@ -343,7 +345,7 @@ function SyftLib:Open()
                             local bBrd=mk("Square",{Filled=false,Color=lC(C.brd,C.mauve,it._hc),Size=Vector2.new(bW,BH),Position=Vector2.new(cx+PAD,iy),Corner=6,Thickness=1,ZIndex=14,Visible=true})
                             local lw=tw(it.label,FSS)
                             local btx=cx+PAD+math.floor((bW-lw)/2)
-                            local bty=iy+math.floor((BH-FSS)/2)
+                            local bty=iy+math.floor((BH/2)-7)
                             local bTxt=mk("Text",{Text=it.label,Size=FSS,Color=lC(C.subtext1,C.text,it._hc),Font=FONT,Position=Vector2.new(btx,bty),ZIndex=15,Visible=true})
                             if inV then
                                 sloop(function(h)
@@ -454,7 +456,9 @@ function SyftLib:Open()
                             local cpParts={}
                             local function cpMk(t,p)
                                 local o=Drawing.new(t); for k,v in pairs(p) do o[k]=v end
-                                table.insert(cpParts,o); table.insert(secDs,o); table.insert(drawings,o); return o
+                                table.insert(cpParts,o); table.insert(secDs,o); table.insert(drawings,o)
+                                if t=="Line" then table.insert(secDsLine,o) else table.insert(secDsPos,o) end
+                                return o
                             end
                             local cpBg=cpMk("Square",{Filled=true,Color=C.crust,Size=Vector2.new(cpW,cpH),Position=Vector2.new(cpX,cpY),Corner=8,ZIndex=30,Visible=false})
                             cpMk("Square",{Filled=false,Color=C.mauve,Size=Vector2.new(cpW,cpH),Position=Vector2.new(cpX,cpY),Corner=8,Thickness=1,ZIndex=31,Visible=false})
@@ -667,9 +671,11 @@ function SyftLib:Open()
                     if dvx~=0 or dvy~=0 then
                         rebuildChrome()
                         local dv=Vector2.new(dvx,dvy)
-                        for _,sd in ipairs(secDs) do
-                            if sd.Position then sd.Position=sd.Position+dv
-                            elseif sd.From then sd.From=sd.From+dv; sd.To=sd.To+dv end
+                        for _,sd in ipairs(secDsPos) do
+                            sd.Position=sd.Position+dv
+                        end
+                        for _,sd in ipairs(secDsLine) do
+                            sd.From=sd.From+dv; sd.To=sd.To+dv
                         end
                         lastPX=lib.px; lastPY=lib.py
                     end
