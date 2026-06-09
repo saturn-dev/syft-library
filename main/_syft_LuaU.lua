@@ -162,6 +162,7 @@ function SyftLib:Open()
     local slideLine=D("Square",{Filled=true,Color=C.mauve,Size=Vector2.new(eTW-16,2),
         Position=Vector2.new(lib.px+TITLEW+slideRelXCur,lib.py+TB-3),ZIndex=10,Visible=true})
 
+    lib.activeTab=1  -- always start on first tab
     local function rebuildChrome()
         winBg.Position=Vector2.new(lib.px,lib.py); winBg.Size=Vector2.new(lib.sw,lib.sh); winBg.Color=C.base
         winBrd.Position=Vector2.new(lib.px,lib.py); winBrd.Size=Vector2.new(lib.sw,lib.sh); winBrd.Color=C.brd
@@ -283,8 +284,8 @@ function SyftLib:Open()
                             if it._at==nil then it._at=it.val and 1 or 0 end
                             local capIt=it
                             local lblT=mk("Text",{Text=it.label,Size=FSS,Color=C.subtext1,Font=FONT,Position=Vector2.new(cx+PAD,iy+6),ZIndex=13,Visible=true})
-                            local cbGlow=mk("Square",{Filled=true,Color=C.mauve,Size=Vector2.new(22,22),Position=Vector2.new(cx+colW2-PAD-19,iy+3),Corner=6,ZIndex=12,Visible=true,Transparency=1-it._at*0.18})
                             local cbBg=mk("Square",{Filled=true,Color=lC(C.surface1,C.mauve,it._at),Size=Vector2.new(16,16),Position=Vector2.new(cx+colW2-PAD-16,iy+6),Corner=4,ZIndex=13,Visible=true})
+                            local cbBorder=mk("Square",{Filled=false,Color=lC(C.surface2,C.mauve,it._at),Size=Vector2.new(16,16),Position=Vector2.new(cx+colW2-PAD-16,iy+6),Corner=4,Thickness=1,ZIndex=14,Visible=true})
                             local bx2=cx+colW2-PAD-16; local by2=iy+6
                             local ck1=mk("Line",{}); ck1.From=Vector2.new(bx2+3,by2+8); ck1.To=Vector2.new(bx2+6,by2+12); ck1.Color=C.base; ck1.Thickness=1.8; ck1.ZIndex=15; ck1.Visible=it._at>0.5
                             local ck2=mk("Line",{}); ck2.From=Vector2.new(bx2+5,by2+12); ck2.To=Vector2.new(bx2+13,by2+5); ck2.Color=C.base; ck2.Thickness=1.8; ck2.ZIndex=15; ck2.Visible=it._at>0.5
@@ -299,7 +300,7 @@ function SyftLib:Open()
                                     capIt._at=lN(capIt._at,capIt.val and 1 or 0,0.2)
                                     local ac=lC(C.surface1,C.mauve,capIt._at)
                                     cbBg.Color=ac
-                                    cbGlow.Transparency=1-capIt._at*0.18
+                                    cbBorder.Color=lC(C.surface2,C.mauve,capIt._at)
                                     ck1.Visible=capIt._at>0.5; ck2.Visible=capIt._at>0.5
                                     lblT.Color=vOver(Vector2.new(capCX,capIY),Vector2.new(capCW,IH)) and C.text or lC(C.subtext1,C.text,capIt._at*0.6)
                                     h.wd=d
