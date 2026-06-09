@@ -176,9 +176,10 @@ function SyftLib:Open()
         if srBg then
             local sx2=lib.px+tw(lib.title,FS)+26
             srBg.Position=Vector2.new(sx2,lib.py+8); srBrd.Position=srBg.Position
-            srIcon.Position=Vector2.new(sx2+10,lib.py+19)
-            srIconL.From=Vector2.new(sx2+13,lib.py+22); srIconL.To=Vector2.new(sx2+16,lib.py+25)
-            srTxt.Position=Vector2.new(sx2+20,lib.py+12)
+            srBg.Color=C.surface0; srBrd.Color=C.brd
+            srIcon.Position=Vector2.new(sx2+10,lib.py+19); srIcon.Color=C.overlay0
+            srIconL.From=Vector2.new(sx2+13,lib.py+22); srIconL.To=Vector2.new(sx2+16,lib.py+25); srIconL.Color=C.overlay0
+            srTxt.Position=Vector2.new(sx2+20,lib.py+12); srTxt.Color=C.overlay0
         end
         for i,td in ipairs(tabDs) do
             td.td.Position=Vector2.new(lib.px+TITLEW+td.relX,lib.py+11)
@@ -374,10 +375,9 @@ function SyftLib:Open()
                             local dBrd=mk("Square",{Filled=false,Color=lC(C.brd,C.mauve,it._hc),Size=Vector2.new(colW2-PAD*2,BH),Position=Vector2.new(cx+PAD,iy),Corner=6,Thickness=1,ZIndex=14,Visible=true})
                             local selText=isM and (#it.sel==0 and "none selected" or table.concat(it.sel,", ")) or it.sel
                             local dTxt=mk("Text",{Text=selText,Size=FSS,Color=C.subtext1,Font=FONT,Position=Vector2.new(cx+PAD+10,iy+8),ZIndex=15,Visible=true})
-                            local dArrX=cx+PAD+(colW2-PAD*2)-16; local dArrY=iy+9
-                            local dArr=mk("Triangle",{})
-                            dArr.PointA=Vector2.new(dArrX+2,dArrY+1); dArr.PointB=Vector2.new(dArrX+8,dArrY+1); dArr.PointC=Vector2.new(dArrX+5,dArrY+6)
-                            dArr.Color=C.overlay0; dArr.Filled=true; dArr.ZIndex=15; dArr.Visible=true
+                            local dArrX=cx+PAD+(colW2-PAD*2)-16; local dArrY=iy+10
+                            local dArrL=mk("Line",{}); dArrL.From=Vector2.new(dArrX+1,dArrY); dArrL.To=Vector2.new(dArrX+5,dArrY+5); dArrL.Color=C.overlay0; dArrL.Thickness=1.5; dArrL.ZIndex=15; dArrL.Visible=true
+                            local dArr=mk("Line",{}); dArr.From=Vector2.new(dArrX+5,dArrY+5); dArr.To=Vector2.new(dArrX+9,dArrY); dArr.Color=C.overlay0; dArr.Thickness=1.5; dArr.ZIndex=15; dArr.Visible=true
                             local lH=#it.opts*DIH+8
                             local lBg=mk("Square",{Filled=true,Color=C.surface0,Size=Vector2.new(colW2-PAD*2,lH),Position=Vector2.new(cx+PAD,iy+BH+2),Corner=6,ZIndex=20,Visible=false})
                             local lBrd=mk("Square",{Filled=false,Color=C.mauve,Size=Vector2.new(colW2-PAD*2,lH),Position=Vector2.new(cx+PAD,iy+BH+2),Corner=6,Thickness=1,ZIndex=21,Visible=false})
@@ -402,7 +402,8 @@ function SyftLib:Open()
                                     local hov=vOver(dBg.Position,dBg.Size)
                                     capIt._hc=lN(capIt._hc,hov and 1 or 0,0.2)
                                     dBg.Color=lC(C.surface0,C.surface1,capIt._hc); dBrd.Color=lC(C.brd,C.mauve,capIt._hc)
-                                    dTxt.Color=lC(C.subtext1,C.text,capIt._hc); dArr.Color=lC(C.overlay0,C.mauve,capIt._hc)
+                                    dTxt.Color=lC(C.subtext1,C.text,capIt._hc)
+                                    local arrC=lC(C.overlay0,C.mauve,capIt._hc); dArrL.Color=arrC; dArr.Color=arrC
                                     if d and not h.wd then
                                         if hov then
                                             if openDD==sid then capIt.open=false; openDD=nil
@@ -412,9 +413,11 @@ function SyftLib:Open()
                                         end
                                     end
                                     if capIt.open then
-                                        dArr.PointA=Vector2.new(dArrX+5,dArrY+1); dArr.PointB=Vector2.new(dArrX+2,dArrY+6); dArr.PointC=Vector2.new(dArrX+8,dArrY+6)
+                                        dArrL.From=Vector2.new(dArrX+1,dArrY+5); dArrL.To=Vector2.new(dArrX+5,dArrY)
+                                        dArr.From=Vector2.new(dArrX+5,dArrY); dArr.To=Vector2.new(dArrX+9,dArrY+5)
                                     else
-                                        dArr.PointA=Vector2.new(dArrX+2,dArrY+1); dArr.PointB=Vector2.new(dArrX+8,dArrY+1); dArr.PointC=Vector2.new(dArrX+5,dArrY+6)
+                                        dArrL.From=Vector2.new(dArrX+1,dArrY); dArrL.To=Vector2.new(dArrX+5,dArrY+5)
+                                        dArr.From=Vector2.new(dArrX+5,dArrY+5); dArr.To=Vector2.new(dArrX+9,dArrY)
                                     end
                                     lBg.Visible=capIt.open; lBrd.Visible=capIt.open
                                     for _,od in ipairs(oDs) do
@@ -650,7 +653,7 @@ function SyftLib:Open()
         end
     end)
 
-    -- DRAG loop: only checks title zone (left of tabs). NO buildSecs during drag.
+    -- DRAG loop: title zone only. rebuildChrome while dragging, buildSecs on release.
     spawn(function()
         local wd=false; local drag=false; local startMX=0; local startMY=0; local startPX=0; local startPY=0
         while true do
@@ -659,33 +662,18 @@ function SyftLib:Open()
                 local d=ismouse1pressed()
                 local mx=Mouse.X; local my=Mouse.Y
                 if d and not wd then
-                    -- drag zone is ONLY left side: title + search bar area
                     if mx>=lib.px and mx<lib.px+TITLEW and my>=lib.py and my<=lib.py+TB then
                         drag=true; startMX=mx; startMY=my; startPX=lib.px; startPY=lib.py
                     end
                 end
-                if not d then
-                    if drag then
-                        -- final position snap via buildSecs on release
-                        buildSecs()
-                    end
-                    drag=false
-                end
                 if drag and d then
-                    local newPX=startPX+(mx-startMX)
-                    local newPY=startPY+(my-startMY)
-                    if newPX~=lib.px or newPY~=lib.py then
-                        local dv=Vector2.new(newPX-lib.px,newPY-lib.py)
-                        lib.px=newPX; lib.py=newPY
-                        rebuildChrome()
-                        for _,sd in ipairs(secDs) do
-                            if sd.Position then sd.Position=sd.Position+dv
-                            elseif sd.From then sd.From=sd.From+dv; sd.To=sd.To+dv
-                            elseif sd.PointA then sd.PointA=sd.PointA+dv; sd.PointB=sd.PointB+dv; sd.PointC=sd.PointC+dv
-                            end
-                        end
-                    end
+                    lib.px=startPX+(mx-startMX); lib.py=startPY+(my-startMY)
+                    rebuildChrome()
                 end
+                if not d and drag then
+                    drag=false; buildSecs()
+                end
+                if not d and not drag then drag=false end
                 wd=d
             else wd=false; drag=false end
         end
@@ -760,19 +748,26 @@ function SyftLib:Open()
     spawn(function()
         local wd=false
         while true do
-            wait(0.05)
-            if lib.toggleKey~=0 and iskeypressed(lib.toggleKey) then
+            wait(0.03)
+            local pressed=(lib.toggleKey~=0 and iskeypressed(lib.toggleKey))
+            if pressed then
                 if not wd then
-                    lib.visible=not lib.visible; local v=lib.visible
+                    lib.visible=not lib.visible
+                    local v=lib.visible
                     winBg.Visible=v; winBrd.Visible=v; topBg.Visible=v; topFill.Visible=v
                     topBrd.Visible=v; titTxt.Visible=v; slideLine.Visible=v
                     if srBg then srBg.Visible=v; srBrd.Visible=v; srIcon.Visible=v; srIconL.Visible=v; srTxt.Visible=v end
                     for _,td in ipairs(tabDs) do td.td.Visible=v end
-                    for _,d2 in ipairs(secDs) do d2.Visible=v end
-                    if v then rebuildChrome(); buildSecs() end
+                    if v then
+                        rebuildChrome(); buildSecs()
+                    else
+                        clearSecs()
+                    end
                     wd=true
                 end
-            else wd=false end
+            else
+                wd=false
+            end
         end
     end)
 end
