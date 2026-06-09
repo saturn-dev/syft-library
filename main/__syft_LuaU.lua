@@ -30,20 +30,6 @@ local C = {
 }
 C.acc=C.mauve; C.brd=C.surface1; C.brd2=C.surface2
 
-local THEMES = {
-    Mocha={base=Color3.fromRGB(24,24,37),mantle=Color3.fromRGB(18,18,28),crust=Color3.fromRGB(14,14,22),surface0=Color3.fromRGB(36,36,54),surface1=Color3.fromRGB(44,44,66),surface2=Color3.fromRGB(54,54,80),overlay0=Color3.fromRGB(108,108,138),overlay1=Color3.fromRGB(127,127,159),text=Color3.fromRGB(205,214,244),subtext1=Color3.fromRGB(166,173,200),subtext0=Color3.fromRGB(147,153,178),lavender=Color3.fromRGB(180,190,254),acc=Color3.fromRGB(203,166,247)},
-    Midnight={base=Color3.fromRGB(10,10,20),mantle=Color3.fromRGB(6,6,14),crust=Color3.fromRGB(4,4,10),surface0=Color3.fromRGB(20,22,40),surface1=Color3.fromRGB(28,30,52),surface2=Color3.fromRGB(36,40,65),overlay0=Color3.fromRGB(90,100,140),overlay1=Color3.fromRGB(110,120,160),text=Color3.fromRGB(210,215,255),subtext1=Color3.fromRGB(160,170,210),subtext0=Color3.fromRGB(130,140,180),lavender=Color3.fromRGB(160,180,255),acc=Color3.fromRGB(100,140,255)},
-    Nord={base=Color3.fromRGB(46,52,64),mantle=Color3.fromRGB(36,42,52),crust=Color3.fromRGB(28,34,44),surface0=Color3.fromRGB(59,66,82),surface1=Color3.fromRGB(67,76,94),surface2=Color3.fromRGB(76,86,106),overlay0=Color3.fromRGB(136,192,208),overlay1=Color3.fromRGB(129,161,193),text=Color3.fromRGB(236,239,244),subtext1=Color3.fromRGB(216,222,233),subtext0=Color3.fromRGB(196,202,213),lavender=Color3.fromRGB(136,192,208),acc=Color3.fromRGB(136,192,208)},
-    Dracula={base=Color3.fromRGB(40,42,54),mantle=Color3.fromRGB(30,32,44),crust=Color3.fromRGB(22,24,36),surface0=Color3.fromRGB(52,55,70),surface1=Color3.fromRGB(62,65,82),surface2=Color3.fromRGB(72,76,96),overlay0=Color3.fromRGB(98,114,164),overlay1=Color3.fromRGB(110,128,180),text=Color3.fromRGB(248,248,242),subtext1=Color3.fromRGB(200,200,194),subtext0=Color3.fromRGB(160,160,154),lavender=Color3.fromRGB(189,147,249),acc=Color3.fromRGB(189,147,249)},
-    GruvboxDark={base=Color3.fromRGB(40,40,40),mantle=Color3.fromRGB(30,30,30),crust=Color3.fromRGB(22,22,22),surface0=Color3.fromRGB(50,48,47),surface1=Color3.fromRGB(60,56,54),surface2=Color3.fromRGB(80,73,69),overlay0=Color3.fromRGB(146,131,116),overlay1=Color3.fromRGB(168,153,132),text=Color3.fromRGB(235,219,178),subtext1=Color3.fromRGB(213,196,161),subtext0=Color3.fromRGB(189,174,147),lavender=Color3.fromRGB(131,165,152),acc=Color3.fromRGB(214,93,14)},
-}
-
-local function applyTheme(t)
-    C.base=t.base;C.mantle=t.mantle;C.crust=t.crust;C.surface0=t.surface0;C.surface1=t.surface1;C.surface2=t.surface2
-    C.overlay0=t.overlay0;C.overlay1=t.overlay1;C.text=t.text;C.subtext1=t.subtext1;C.subtext0=t.subtext0
-    C.lavender=t.lavender;C.mauve=t.acc;C.acc=t.acc;C.brd=t.surface1;C.brd2=t.surface2
-end
-
 local FONT=Drawing.Fonts.System; local FONTB=Drawing.Fonts.SystemBold
 local FS=14; local FSS=13; local FSX=12
 local TB=38; local IH=28; local BH=30; local SH=44; local DIH=24; local PAD=12; local CP=8
@@ -78,8 +64,6 @@ function SyftLib.new(title)
     return self
 end
 function SyftLib:Search() self.doSearch=true end
-function SyftLib:SetTheme(name) local t=THEMES[name]; if t then applyTheme(t); if self._rebuild then self._rebuild() end end end
-function SyftLib:GetThemeNames() local r={}; for k in pairs(THEMES) do table.insert(r,k) end; table.sort(r); return r end
 
 function SyftLib:Tab(name)
     local tab={name=name,sections={}}
@@ -146,7 +130,6 @@ function SyftLib:Open()
         srTxt =D("Text",{Text="search...",Size=FSX,Color=C.overlay0,Font=FONT,Position=Vector2.new(sx+20,lib.py+12),ZIndex=9,Visible=true})
     end
 
-    -- TITLEW = pixels used by title + search, tabs start after this
     local TITLEW=tw(lib.title,FS)+26+(lib.doSearch and srW+14 or 0)
     local numT=#lib.tnames
     local eTW=math.floor((lib.sw-TITLEW-20)/numT)
@@ -172,7 +155,7 @@ function SyftLib:Open()
         topFill.Position=Vector2.new(lib.px,lib.py+TB-10); topFill.Size=Vector2.new(lib.sw,10); topFill.Color=C.mantle
         topBrd.Position=Vector2.new(lib.px,lib.py+TB-1); topBrd.Size=Vector2.new(lib.sw,1); topBrd.Color=C.brd
         titTxt.Position=Vector2.new(lib.px+14,lib.py+11); titTxt.Color=C.text
-        slideLine.Color=C.acc
+        slideLine.Color=C.acc; slideLine.Position=Vector2.new(lib.px+TITLEW+slideRelXCur,lib.py+TB-3); slideLine.Size=Vector2.new(eTW-16,2)
         if srBg then
             local sx2=lib.px+tw(lib.title,FS)+26
             srBg.Position=Vector2.new(sx2,lib.py+8); srBrd.Position=srBg.Position
@@ -185,8 +168,6 @@ function SyftLib:Open()
             td.td.Position=Vector2.new(lib.px+TITLEW+td.relX,lib.py+11)
             td.td.Color=(i==lib.activeTab) and C.acc or C.overlay1
         end
-        slideLine.Position=Vector2.new(lib.px+TITLEW+slideRelXCur,lib.py+TB-3)
-        slideLine.Size=Vector2.new(eTW-16,2)
     end
 
     local secDs={}; local loops={}
@@ -204,8 +185,6 @@ function SyftLib:Open()
         spawn(function() while not h.dead do fn(h); wait() end end)
         return h
     end
-
-    lib._rebuild=function() rebuildChrome(); buildSecs() end
 
     local cH=lib.sh-TB-CP*2; local SCSP=24
 
@@ -294,7 +273,6 @@ function SyftLib:Open()
                                     if d and not h.wd and vOver(Vector2.new(capCX,capIY),Vector2.new(capCW,IH)) then
                                         capIt.val=not capIt.val
                                         if capIt.cb then capIt.cb(capIt.val) end
-                                        print("[TOGGLE]",capIt.label,capIt.val)
                                     end
                                     capIt._at=lN(capIt._at,capIt.val and 1 or 0,0.2)
                                     local ac=lC(C.surface1,C.mauve,capIt._at)
@@ -332,7 +310,7 @@ function SyftLib:Open()
                                         local nv=math.floor(capIt.min+(capIt.max-capIt.min)*p2+0.5)
                                         capIt.val=nv
                                         local fw2=math.max(8,math.floor(capTW*p2))
-                                        sF.Size=Vector2.new(fw2,6); sGl.Size=Vector2.new(fw2+4,10); sGl.Position=Vector2.new(capTX-2,capIY+25)
+                                        sF.Size=Vector2.new(fw2,6); sGl.Size=Vector2.new(fw2+4,10)
                                         targetX=capTX+fw2-8
                                         local vs2=math.floor(nv).." "..capIt.sfx
                                         sVal.Text=vs2; sVal.Position=Vector2.new(capCX+capCW-PAD-tw(vs2,FSX),capIY+5)
@@ -352,17 +330,20 @@ function SyftLib:Open()
                         elseif it.kind=="btn" then
                             iy=iy+2; if it._hc==nil then it._hc=0 end
                             local capIt=it
-                            local bBg=mk("Square",{Filled=true,Color=lC(C.surface0,C.surface2,it._hc),Size=Vector2.new(colW2-PAD*2,BH),Position=Vector2.new(cx+PAD,iy),Corner=6,ZIndex=13,Visible=true})
-                            local bBrd=mk("Square",{Filled=false,Color=lC(C.brd,C.mauve,it._hc),Size=Vector2.new(colW2-PAD*2,BH),Position=Vector2.new(cx+PAD,iy),Corner=6,Thickness=1,ZIndex=14,Visible=true})
+                            local bW=colW2-PAD*2
+                            local bBg=mk("Square",{Filled=true,Color=lC(C.surface0,C.surface2,it._hc),Size=Vector2.new(bW,BH),Position=Vector2.new(cx+PAD,iy),Corner=6,ZIndex=13,Visible=true})
+                            local bBrd=mk("Square",{Filled=false,Color=lC(C.brd,C.mauve,it._hc),Size=Vector2.new(bW,BH),Position=Vector2.new(cx+PAD,iy),Corner=6,Thickness=1,ZIndex=14,Visible=true})
                             local lw=tw(it.label,FSS)
-                            local bTxt=mk("Text",{Text=it.label,Size=FSS,Color=lC(C.subtext1,C.text,it._hc),Font=FONT,Position=Vector2.new(cx+PAD+math.floor((colW2-PAD*2)/2-lw/2),iy+math.floor((BH-FSS)/2)-1),ZIndex=15,Visible=true})
+                            local btx=cx+PAD+math.floor((bW-lw)/2)
+                            local bty=iy+math.floor((BH-FSS)/2)
+                            local bTxt=mk("Text",{Text=it.label,Size=FSS,Color=lC(C.subtext1,C.text,it._hc),Font=FONT,Position=Vector2.new(btx,bty),ZIndex=15,Visible=true})
                             if inV then
                                 sloop(function(h)
                                     local d=ismouse1pressed()
                                     local hov=vOver(bBg.Position,bBg.Size)
                                     capIt._hc=lN(capIt._hc,hov and 1 or 0,0.2)
                                     bBg.Color=lC(C.surface0,C.surface2,capIt._hc); bBrd.Color=lC(C.brd,C.mauve,capIt._hc); bTxt.Color=lC(C.subtext1,C.text,capIt._hc)
-                                    if hov and d and not h.wd then bBg.Color=C.mauve; bTxt.Color=C.base; if capIt.cb then capIt.cb() end; print("[BUTTON]",capIt.label) end
+                                    if hov and d and not h.wd then bBg.Color=C.mauve; bTxt.Color=C.base; if capIt.cb then capIt.cb() end end
                                     h.wd=d
                                 end)
                             end
@@ -375,9 +356,10 @@ function SyftLib:Open()
                             local dBrd=mk("Square",{Filled=false,Color=lC(C.brd,C.mauve,it._hc),Size=Vector2.new(colW2-PAD*2,BH),Position=Vector2.new(cx+PAD,iy),Corner=6,Thickness=1,ZIndex=14,Visible=true})
                             local selText=isM and (#it.sel==0 and "none selected" or table.concat(it.sel,", ")) or it.sel
                             local dTxt=mk("Text",{Text=selText,Size=FSS,Color=C.subtext1,Font=FONT,Position=Vector2.new(cx+PAD+10,iy+8),ZIndex=15,Visible=true})
-                            local dArrX=cx+PAD+(colW2-PAD*2)-16; local dArrY=iy+10
-                            local dArrL=mk("Line",{}); dArrL.From=Vector2.new(dArrX+1,dArrY); dArrL.To=Vector2.new(dArrX+5,dArrY+5); dArrL.Color=C.overlay0; dArrL.Thickness=1.5; dArrL.ZIndex=15; dArrL.Visible=true
-                            local dArr=mk("Line",{}); dArr.From=Vector2.new(dArrX+5,dArrY+5); dArr.To=Vector2.new(dArrX+9,dArrY); dArr.Color=C.overlay0; dArr.Thickness=1.5; dArr.ZIndex=15; dArr.Visible=true
+                            -- chevron caret (two lines forming V / ^)
+                            local dArrX=cx+PAD+(colW2-PAD*2)-15; local dArrY=iy+11
+                            local dArrL=mk("Line",{}); dArrL.From=Vector2.new(dArrX,dArrY); dArrL.To=Vector2.new(dArrX+4,dArrY+4); dArrL.Color=C.overlay0; dArrL.Thickness=1.4; dArrL.ZIndex=15; dArrL.Visible=true
+                            local dArr=mk("Line",{}); dArr.From=Vector2.new(dArrX+4,dArrY+4); dArr.To=Vector2.new(dArrX+8,dArrY); dArr.Color=C.overlay0; dArr.Thickness=1.4; dArr.ZIndex=15; dArr.Visible=true
                             local lH=#it.opts*DIH+8
                             local lBg=mk("Square",{Filled=true,Color=C.surface0,Size=Vector2.new(colW2-PAD*2,lH),Position=Vector2.new(cx+PAD,iy+BH+2),Corner=6,ZIndex=20,Visible=false})
                             local lBrd=mk("Square",{Filled=false,Color=C.mauve,Size=Vector2.new(colW2-PAD*2,lH),Position=Vector2.new(cx+PAD,iy+BH+2),Corner=6,Thickness=1,ZIndex=21,Visible=false})
@@ -413,11 +395,11 @@ function SyftLib:Open()
                                         end
                                     end
                                     if capIt.open then
-                                        dArrL.From=Vector2.new(dArrX+1,dArrY+5); dArrL.To=Vector2.new(dArrX+5,dArrY)
-                                        dArr.From=Vector2.new(dArrX+5,dArrY); dArr.To=Vector2.new(dArrX+9,dArrY+5)
+                                        dArrL.From=Vector2.new(dArrX,dArrY+4); dArrL.To=Vector2.new(dArrX+4,dArrY)
+                                        dArr.From=Vector2.new(dArrX+4,dArrY); dArr.To=Vector2.new(dArrX+8,dArrY+4)
                                     else
-                                        dArrL.From=Vector2.new(dArrX+1,dArrY); dArrL.To=Vector2.new(dArrX+5,dArrY+5)
-                                        dArr.From=Vector2.new(dArrX+5,dArrY+5); dArr.To=Vector2.new(dArrX+9,dArrY)
+                                        dArrL.From=Vector2.new(dArrX,dArrY); dArrL.To=Vector2.new(dArrX+4,dArrY+4)
+                                        dArr.From=Vector2.new(dArrX+4,dArrY+4); dArr.To=Vector2.new(dArrX+8,dArrY)
                                     end
                                     lBg.Visible=capIt.open; lBrd.Visible=capIt.open
                                     for _,od in ipairs(oDs) do
@@ -437,12 +419,12 @@ function SyftLib:Open()
                                                         o2.t.Color=s2 and C.mauve or C.subtext1; o2.t.Font=s2 and FONTB or FONT
                                                         if o2.mark then o2.mark.Filled=s2; o2.mark.Color=s2 and C.mauve or C.surface2 end
                                                     end
-                                                    if capIt.cb then capIt.cb(capIt.sel) end; print("[MULTI]",capIt.label)
+                                                    if capIt.cb then capIt.cb(capIt.sel) end
                                                 else
                                                     capIt.sel=od.v; dTxt.Text=od.v
                                                     for _,o2 in ipairs(oDs) do o2.t.Color=(o2.v==capIt.sel) and C.mauve or C.subtext1; o2.t.Font=(o2.v==capIt.sel) and FONTB or FONT end
                                                     capIt.open=false; openDD=nil
-                                                    if capIt.cb then capIt.cb(od.v) end; print("[SELECT]",capIt.label,od.v)
+                                                    if capIt.cb then capIt.cb(od.v) end
                                                 end
                                             end
                                         end
@@ -475,8 +457,7 @@ function SyftLib:Open()
                             local cpPrevHead=cpMk("Square",{Filled=true,Color=it.col,Size=Vector2.new(14,14),Position=Vector2.new(cpX+cpW-22,cpY+5),Corner=3,ZIndex=33,Visible=false})
                             local hbX=cpX+8; local hbY=cpY+30; local hbW=cpW-16; local hbH=11
                             for si=0,29 do
-                                local mc=hsv((si+0.5)/30,1,1)
-                                cpMk("Square",{Filled=true,Color=mc,Size=Vector2.new(math.ceil(hbW/30)+1,hbH),Position=Vector2.new(hbX+si*(hbW/30),hbY),ZIndex=33,Visible=false})
+                                cpMk("Square",{Filled=true,Color=hsv((si+0.5)/30,1,1),Size=Vector2.new(math.ceil(hbW/30)+1,hbH),Position=Vector2.new(hbX+si*(hbW/30),hbY),ZIndex=33,Visible=false})
                             end
                             cpMk("Square",{Filled=false,Color=C.surface2,Size=Vector2.new(hbW,hbH),Position=Vector2.new(hbX,hbY),Corner=2,Thickness=1,ZIndex=34,Visible=false})
                             local hCur=cpMk("Square",{Filled=true,Color=C.wht,Size=Vector2.new(3,hbH+4),Position=Vector2.new(hbX+math.floor(it.ch*hbW)-1,hbY-2),Corner=2,ZIndex=35,Visible=false})
@@ -516,7 +497,7 @@ function SyftLib:Open()
                                                 for _,ps in ipairs(psDs) do
                                                     if mOver(ps.x,ps.y,psW,psW) then
                                                         capIt.col=ps.c; swBg.Color=ps.c; cpPrevHead.Color=ps.c; cpPrevBot.Color=ps.c; hexLbl.Text=hx(ps.c)
-                                                        if capIt.cb then capIt.cb(ps.c) end; print("[COLOR]",hx(ps.c))
+                                                        if capIt.cb then capIt.cb(ps.c) end
                                                         cpOpen=false; setCPv(false)
                                                     end
                                                 end
@@ -562,7 +543,7 @@ function SyftLib:Open()
                                             if iskeypressed(kc) then
                                                 if not h.kd[kc] then
                                                     if kc==8 then capIt.val=capIt.val:sub(1,-2)
-                                                    elseif kc==13 then capIt.focused=false; if capIt.cb then capIt.cb(capIt.val) end; print("[TEXTBOX]",capIt.label,capIt.val)
+                                                    elseif kc==13 then capIt.focused=false; if capIt.cb then capIt.cb(capIt.val) end
                                                     elseif kc==27 then capIt.focused=false
                                                     elseif kc==32 then if #capIt.val<40 then capIt.val=capIt.val.." " end
                                                     elseif kc>=48 and kc<=57 then if #capIt.val<40 then capIt.val=capIt.val..string.char(kc) end
@@ -593,9 +574,12 @@ function SyftLib:Open()
                                     if capIt.binding then
                                         for kname2,kc2 in pairs(KCODES) do
                                             if kc2~=0 and iskeypressed(kc2) then
-                                                capIt.kc=kc2; capIt.binding=false; kbTxt.Text="["..kname2.."]"; kbBrd.Color=C.brd
-                                                if capIt.cb then capIt.cb(kc2,kname2) end; print("[KEYBIND]",capIt.label,kname2)
-                                            end
+                                                if not h.kd[kc2] then
+                                                    capIt.kc=kc2; capIt.binding=false; kbTxt.Text="["..kname2.."]"; kbBrd.Color=C.brd
+                                                    if capIt.cb then capIt.cb(kc2,kname2) end
+                                                    h.kd[kc2]=true
+                                                end
+                                            else h.kd[kc2]=false end
                                         end
                                     end; h.wd=d
                                 end)
@@ -621,7 +605,7 @@ function SyftLib:Open()
 
     buildSecs()
 
-    -- TAB loop: only checks tab zone (right portion of topbar)
+    -- TAB loop
     spawn(function()
         local wd=false
         while true do
@@ -632,7 +616,7 @@ function SyftLib:Open()
                     local tabStartX=lib.px+TITLEW
                     for i=1,numT do
                         local tx=tabStartX+(i-1)*eTW
-                        if Mouse.X>=tx and Mouse.X<=tx+eTW and Mouse.Y>=lib.py and Mouse.Y<=lib.py+TB then
+                        if Mouse.X>=tx and Mouse.X<tx+eTW and Mouse.Y>=lib.py and Mouse.Y<=lib.py+TB then
                             if lib.activeTab~=i then
                                 lib.activeTab=i; openDD=nil
                                 for j,td in ipairs(tabDs) do
@@ -653,7 +637,7 @@ function SyftLib:Open()
         end
     end)
 
-    -- DRAG loop: title zone only. rebuildChrome while dragging, buildSecs on release.
+    -- DRAG loop: sections hidden during drag, rebuilt on release
     spawn(function()
         local wd=false; local drag=false; local startMX=0; local startMY=0; local startPX=0; local startPY=0
         while true do
@@ -664,6 +648,8 @@ function SyftLib:Open()
                 if d and not wd then
                     if mx>=lib.px and mx<lib.px+TITLEW and my>=lib.py and my<=lib.py+TB then
                         drag=true; startMX=mx; startMY=my; startPX=lib.px; startPY=lib.py
+                        -- hide sections during drag to prevent visual glitch
+                        for _,sd in ipairs(secDs) do sd.Visible=false end
                     end
                 end
                 if drag and d then
@@ -671,9 +657,9 @@ function SyftLib:Open()
                     rebuildChrome()
                 end
                 if not d and drag then
-                    drag=false; buildSecs()
+                    drag=false
+                    buildSecs()
                 end
-                if not d and not drag then drag=false end
                 wd=d
             else wd=false; drag=false end
         end
@@ -692,9 +678,7 @@ function SyftLib:Open()
                     srIconL.From=Vector2.new(sx2+13,lib.py+22); srIconL.To=Vector2.new(sx2+16,lib.py+25)
                     srTxt.Position=Vector2.new(sx2+20,lib.py+12)
                     local d=ismouse1pressed()
-                    if d and not wd then
-                        lib.sfocus=mOver(sx2,lib.py+8,srW,22)
-                    end
+                    if d and not wd then lib.sfocus=mOver(sx2,lib.py+8,srW,22) end
                     srBrd.Color=lib.sfocus and C.mauve or C.brd; srBg.Color=lib.sfocus and C.surface1 or C.surface0
                     local ic=lib.sfocus and C.mauve or C.overlay0; srIcon.Color=ic; srIconL.Color=ic
                     if lib.sfocus then
@@ -744,13 +728,12 @@ function SyftLib:Open()
         end
     end)
 
-    -- TOGGLE KEY loop
+    -- TOGGLE KEY loop: poll fast, kill sloops on hide
     spawn(function()
         local wd=false
         while true do
-            wait(0.03)
-            local pressed=(lib.toggleKey~=0 and iskeypressed(lib.toggleKey))
-            if pressed then
+            wait(0.02)
+            if lib.toggleKey~=0 and iskeypressed(lib.toggleKey) then
                 if not wd then
                     lib.visible=not lib.visible
                     local v=lib.visible
