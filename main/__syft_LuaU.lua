@@ -128,7 +128,11 @@ end
 function SyftLib:Search() self.doSearch=true end
 
 function SyftLib:SetTheme(name)
-    local t=THEMES[name]; if t then applyTheme(t) end
+    local t=THEMES[name]
+    if t then
+        applyTheme(t)
+        if self._rebuild then self._rebuild() end
+    end
 end
 
 function SyftLib:GetThemeNames()
@@ -226,12 +230,7 @@ function SyftLib:Open()
     local slideLine=D("Square",{Filled=true,Color=C.mauve,Size=Vector2.new(eTW-16,2),
         Position=Vector2.new(lib.px+TITLEW+slideRelXCur,lib.py+TB-3),ZIndex=10,Visible=true})
 
-    -- mask bars: cover content that overflows above/below the window
-    local maskTop=D("Square",{Filled=true,Color=C.base,Size=Vector2.new(lib.sw,CP+2),Position=Vector2.new(lib.px,lib.py+TB-1),ZIndex=19,Visible=true})
-    local maskBot=D("Square",{Filled=true,Color=C.base,Size=Vector2.new(lib.sw,CP+2),Position=Vector2.new(lib.px,lib.py+lib.sh-CP-1),ZIndex=19,Visible=true})
-    -- side mask
-    local maskL=D("Square",{Filled=true,Color=C.base,Size=Vector2.new(CP-1,lib.sh),Position=Vector2.new(lib.px,lib.py),ZIndex=19,Visible=true})
-    local maskR=D("Square",{Filled=true,Color=C.base,Size=Vector2.new(CP-1,lib.sh),Position=Vector2.new(lib.px+lib.sw-CP+1,lib.py),ZIndex=19,Visible=true})
+
 
     local function rebuildChrome()
         winBg.Position=Vector2.new(lib.px,lib.py); winBg.Size=Vector2.new(lib.sw,lib.sh)
@@ -240,10 +239,11 @@ function SyftLib:Open()
         topFill.Position=Vector2.new(lib.px,lib.py+TB-10); topFill.Size=Vector2.new(lib.sw,10)
         topBrd.Position=Vector2.new(lib.px,lib.py+TB-1); topBrd.Size=Vector2.new(lib.sw,1)
         titTxt.Position=Vector2.new(lib.px+14,lib.py+11)
-        maskTop.Position=Vector2.new(lib.px,lib.py+TB-1); maskTop.Size=Vector2.new(lib.sw,CP+2)
-        maskBot.Position=Vector2.new(lib.px,lib.py+lib.sh-CP-1); maskBot.Size=Vector2.new(lib.sw,CP+2)
-        maskL.Position=Vector2.new(lib.px,lib.py); maskL.Size=Vector2.new(CP-1,lib.sh)
-        maskR.Position=Vector2.new(lib.px+lib.sw-CP+1,lib.py); maskR.Size=Vector2.new(CP-1,lib.sh)
+        -- update chrome colors from current theme
+        winBg.Color=C.base; winBrd.Color=C.brd; topBg.Color=C.mantle; topFill.Color=C.mantle
+        topBrd.Color=C.brd; titTxt.Color=C.text; slideLine.Color=C.acc
+        for j,td in ipairs(tabDs) do td.td.Color=(j==lib.activeTab) and C.acc or C.overlay1 end
+
         if srBg then
             local sx2=lib.px+tw(lib.title,FS)+26
             srBg.Position=Vector2.new(sx2,lib.py+8); srBrd.Position=srBg.Position
@@ -259,6 +259,7 @@ function SyftLib:Open()
         slideLine.Size=Vector2.new(eTW-16,2)
     end
 
+    lib._rebuild=function() rebuildChrome(); buildSecs() end
     local secDs={}; local loops={}
 
     local function clearSecs()
@@ -492,7 +493,10 @@ function SyftLib:Open()
                         local dBrd=mk("Square",{Filled=false,Color=lC(C.brd,C.mauve,it._hc),Size=Vector2.new(colW2-PAD*2,BH),Position=Vector2.new(cx+PAD,iy),Corner=6,Thickness=1,ZIndex=14,Visible=true})
                         local selText=isM and (#it.sel==0 and "none selected" or table.concat(it.sel,", ")) or it.sel
                         local dTxt=mk("Text",{Text=selText,Size=FSS,Color=C.subtext1,Font=FONT,Position=Vector2.new(cx+PAD+10,iy+8),ZIndex=15,Visible=true})
-                        local dArr=mk("Text",{Text="v",Size=FSX,Color=C.overlay0,Font=FONT,Position=Vector2.new(cx+PAD+(colW2-PAD*2)-16,iy+9),ZIndex=15,Visible=true})
+                        local dArrX=cx+PAD+(colW2-PAD*2)-16; local dArrY=iy+9
+                        local dArr=mk("Triangle",{})
+                        dArr.PointA=Vector2.new(dArrX+2,dArrY+1); dArr.PointB=Vector2.new(dArrX+8,dArrY+1); dArr.PointC=Vector2.new(dArrX+5,dArrY+6)
+                        dArr.Color=C.overlay0; dArr.Filled=true; dArr.ZIndex=15; dArr.Visible=true
                         local lH=#it.opts*DIH+8
                         local lBg =mk("Square",{Filled=true,Color=C.surface0,Size=Vector2.new(colW2-PAD*2,lH),Position=Vector2.new(cx+PAD,iy+BH+2),Corner=6,ZIndex=20,Visible=false})
                         local lBrd=mk("Square",{Filled=false,Color=C.mauve,Size=Vector2.new(colW2-PAD*2,lH),Position=Vector2.new(cx+PAD,iy+BH+2),Corner=6,Thickness=1,ZIndex=21,Visible=false})
@@ -527,7 +531,11 @@ function SyftLib:Open()
                                         capIt.open=false; if openDD==sid then openDD=nil end
                                     end
                                 end
-                                dArr.Text=capIt.open and "^" or "v"
+                                if capIt.open then
+                                    dArr.PointA=Vector2.new(dArrX+5,dArrY+1); dArr.PointB=Vector2.new(dArrX+2,dArrY+6); dArr.PointC=Vector2.new(dArrX+8,dArrY+6)
+                                else
+                                    dArr.PointA=Vector2.new(dArrX+2,dArrY+1); dArr.PointB=Vector2.new(dArrX+8,dArrY+1); dArr.PointC=Vector2.new(dArrX+5,dArrY+6)
+                                end
                                 lBg.Visible=capIt.open; lBrd.Visible=capIt.open
                                 for oi,od in ipairs(oDs) do
                                     od.t.Visible=capIt.open
@@ -771,7 +779,8 @@ function SyftLib:Open()
     if lib.doSearch then
         spawn(function()
             local lastQ=""
-            while lib.visible do
+            while true do
+                if not lib.visible then wait(0.05) else
                 local sx2=lib.px+tw(lib.title,FS)+26
                 if srBg then
                     srBg.Position=Vector2.new(sx2,lib.py+8); srBrd.Position=srBg.Position
@@ -805,6 +814,7 @@ function SyftLib:Open()
                 end
                 if lib.query~=lastQ then lastQ=lib.query; buildSecs() end
                 wait(0.016)
+                end
             end
         end)
     end
@@ -812,7 +822,8 @@ function SyftLib:Open()
     -- tab switching + slide animation
     spawn(function()
         local wd=false
-        while lib.visible do
+        while true do
+            if lib.visible then
             local d=ismouse1pressed()
             for i=1,numT do
                 local tapX=lib.px+TITLEW+(i-1)*eTW
@@ -830,14 +841,17 @@ function SyftLib:Open()
             end
             slideRelXCur=lN(slideRelXCur,slideRelX,0.22)
             slideLine.Position=Vector2.new(lib.px+TITLEW+slideRelXCur,lib.py+TB-3)
-            wd=d; wait(0.016)
+            wd=d
+            else wd=false end
+            wait(0.016)
         end
     end)
 
     -- drag
     spawn(function()
         local drag=false; local ds=nil; local spx=0; local spy=0; local wd=false
-        while lib.visible do
+        while true do
+            if lib.visible then
             local d=ismouse1pressed(); local m2=mp()
             if d and not wd and over(Vector2.new(lib.px,lib.py),Vector2.new(lib.sw,TB)) and not openDD and not lib.sfocus then
                 drag=true; ds=m2; spx=lib.px; spy=lib.py
@@ -847,13 +861,16 @@ function SyftLib:Open()
                 lib.px=spx+(m2.X-ds.X); lib.py=spy+(m2.Y-ds.Y)
                 rebuildChrome(); buildSecs()
             end
-            wd=d; wait(0.016)
+            wd=d
+            else drag=false; wd=false end
+            wait(0.016)
         end
     end)
 
     -- scroll
     spawn(function()
-        while lib.visible do
+        while true do
+            if not lib.visible then wait(0.05) else
             local inC=over(Vector2.new(lib.px,lib.py+TB),Vector2.new(lib.sw,lib.sh-TB))
             if inC then
                 local at=lib.activeTab; if not lib.scrollY[at] then lib.scrollY[at]=0 end
@@ -870,7 +887,7 @@ function SyftLib:Open()
                     elseif iskeypressed(0x28) then lib.scrollY[at]=math.min(maxS2,lib.scrollY[at]+SCSP); buildSecs(); wait(0.05)
                     else wait(0.016) end
                 else wait(0.016) end
-            else wait(0.05) end
+            end end
         end
     end)
 
@@ -883,10 +900,10 @@ function SyftLib:Open()
                     lib.visible=not lib.visible; local v=lib.visible
                     winBg.Visible=v; winBrd.Visible=v; topBg.Visible=v; topFill.Visible=v
                     topBrd.Visible=v; titTxt.Visible=v; slideLine.Visible=v
-                    maskTop.Visible=v; maskBot.Visible=v; maskL.Visible=v; maskR.Visible=v
                     if srBg then srBg.Visible=v; srBrd.Visible=v; srIcon.Visible=v; srIconL.Visible=v; srTxt.Visible=v end
                     for _,td in ipairs(tabDs) do td.td.Visible=v end
                     for _,d2 in ipairs(secDs) do d2.Visible=v end
+                    if v then rebuildChrome(); buildSecs() end
                     wd=true
                 end
             else wd=false end
