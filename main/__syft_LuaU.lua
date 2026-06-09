@@ -492,61 +492,63 @@ function SyftLib:Open()
                             local swX=cx+colW2-PAD-26; local swY=iy+4
                             local swBg =mk("Square",{Filled=true,Color=it.col,Size=Vector2.new(24,18),Position=Vector2.new(swX,swY),Corner=5,ZIndex=13,Visible=true})
                             local swBrd=mk("Square",{Filled=false,Color=C.brd2,Size=Vector2.new(24,18),Position=Vector2.new(swX,swY),Corner=5,Thickness=1,ZIndex=14,Visible=true})
-                            local cpW=200; local cpH=186
-                            local cpX=math.clamp(cx+math.floor(colW2/2)-cpW/2,lib.px+2,lib.px+lib.sw-cpW-2)
-                            local cpY=iy+IH+4
-                            local cpBg   =mk("Square",{Filled=true,Color=C.crust,Size=Vector2.new(cpW,cpH),Position=Vector2.new(cpX,cpY),Corner=10,ZIndex=30,Visible=false})
-                            mk("Square",{Filled=false,Color=C.mauve,Size=Vector2.new(cpW,cpH),Position=Vector2.new(cpX,cpY),Corner=10,Thickness=1,ZIndex=31,Visible=false})
-                            mk("Square",{Filled=true,Color=C.surface0,Size=Vector2.new(cpW,26),Position=Vector2.new(cpX,cpY),Corner=10,ZIndex=32,Visible=false})
-                            mk("Square",{Filled=true,Color=C.surface0,Size=Vector2.new(cpW,12),Position=Vector2.new(cpX,cpY+14),ZIndex=32,Visible=false})
-                            mk("Square",{Filled=true,Color=C.brd,Size=Vector2.new(cpW,1),Position=Vector2.new(cpX,cpY+25),ZIndex=33,Visible=false})
-                            local cpHexLabel=mk("Text",{Text="color picker",Size=FSX,Color=C.subtext0,Font=FONTB,Position=Vector2.new(cpX+10,cpY+7),ZIndex=33,Visible=false})
-                            local prevSw2=mk("Square",{Filled=true,Color=it.col,Size=Vector2.new(16,16),Position=Vector2.new(cpX+cpW-28,cpY+5),Corner=4,ZIndex=33,Visible=false})
-                            local hbX=cpX+8; local hbY=cpY+34; local hbW=cpW-16; local hbH=12
+
+                            local cpW=196; local cpH=178
+                            local cpX=math.clamp(cx+math.floor(colW2/2)-math.floor(cpW/2),lib.px+4,lib.px+lib.sw-cpW-4)
+                            local cpY=iy+IH+2
+
+                            local cpParts={}
+                            local function cpMk(t,p)
+                                local o=Drawing.new(t); for k,v in pairs(p) do o[k]=v end
+                                table.insert(cpParts,o); table.insert(secDs,o); table.insert(drawings,o); return o
+                            end
+
+                            local cpBg  =cpMk("Square",{Filled=true,Color=C.crust,Size=Vector2.new(cpW,cpH),Position=Vector2.new(cpX,cpY),Corner=8,ZIndex=30,Visible=false})
+                            cpMk("Square",{Filled=false,Color=C.mauve,Size=Vector2.new(cpW,cpH),Position=Vector2.new(cpX,cpY),Corner=8,Thickness=1,ZIndex=31,Visible=false})
+                            cpMk("Square",{Filled=true,Color=C.surface0,Size=Vector2.new(cpW,24),Position=Vector2.new(cpX,cpY),Corner=8,ZIndex=32,Visible=false})
+                            cpMk("Square",{Filled=true,Color=C.surface0,Size=Vector2.new(cpW,10),Position=Vector2.new(cpX,cpY+14),ZIndex=32,Visible=false})
+                            cpMk("Square",{Filled=true,Color=C.brd,Size=Vector2.new(cpW,1),Position=Vector2.new(cpX,cpY+23),ZIndex=33,Visible=false})
+                            cpMk("Text",{Text="color picker",Size=FSX,Color=C.subtext0,Font=FONTB,Position=Vector2.new(cpX+10,cpY+6),ZIndex=33,Visible=false})
+                            local cpPrevTop=cpMk("Square",{Filled=true,Color=it.col,Size=Vector2.new(14,14),Position=Vector2.new(cpX+cpW-22,cpY+5),Corner=3,ZIndex=33,Visible=false})
+
+                            local hbX=cpX+8; local hbY=cpY+30; local hbW=cpW-16; local hbH=11
                             local hues2={Color3.fromRGB(255,0,0),Color3.fromRGB(255,255,0),Color3.fromRGB(0,255,0),Color3.fromRGB(0,255,255),Color3.fromRGB(0,0,255),Color3.fromRGB(255,0,255)}
                             local hsw=math.floor(hbW/6); local hueSegs={}
                             for i2,hc in ipairs(hues2) do
-                                local hs=mk("Square",{Filled=true,Color=hc,Size=Vector2.new(hsw+1,hbH),Position=Vector2.new(hbX+(i2-1)*hsw,hbY),ZIndex=33,Visible=false})
+                                local hs=cpMk("Square",{Filled=true,Color=hc,Size=Vector2.new(hsw+1,hbH),Position=Vector2.new(hbX+(i2-1)*hsw,hbY),ZIndex=33,Visible=false})
                                 table.insert(hueSegs,hs)
                             end
-                            mk("Square",{Filled=false,Color=C.surface2,Size=Vector2.new(hbW,hbH),Position=Vector2.new(hbX,hbY),Corner=3,Thickness=1,ZIndex=34,Visible=false})
-                            local hCur=mk("Square",{Filled=true,Color=C.wht,Size=Vector2.new(3,hbH+6),Position=Vector2.new(hbX+math.floor(it.ch*hbW)-1,hbY-3),Corner=2,ZIndex=35,Visible=false})
-                            local svX=cpX+8; local svY=hbY+hbH+8; local svW=cpW-16; local svH=76
+                            cpMk("Square",{Filled=false,Color=C.surface2,Size=Vector2.new(hbW,hbH),Position=Vector2.new(hbX,hbY),Corner=2,Thickness=1,ZIndex=34,Visible=false})
+                            local hCur=cpMk("Square",{Filled=true,Color=C.wht,Size=Vector2.new(3,hbH+4),Position=Vector2.new(hbX+math.floor(it.ch*hbW)-1,hbY-2),Corner=2,ZIndex=35,Visible=false})
+
+                            local svX=cpX+8; local svY=hbY+hbH+6; local svW=cpW-16; local svH=72
                             local c2=16; local r2=9; local cells={}
                             for ci2=0,c2-1 do for ri2=0,r2-1 do
                                 local s2=ci2/(c2-1); local v2=1-ri2/(r2-1)
                                 local cw3=svW/c2; local ch3=svH/r2
-                                local sc=mk("Square",{Filled=true,Color=hsv(it.ch,s2,v2),Size=Vector2.new(math.ceil(cw3)+1,math.ceil(ch3)+1),Position=Vector2.new(svX+ci2*cw3,svY+ri2*ch3),ZIndex=33,Visible=false})
+                                local sc=cpMk("Square",{Filled=true,Color=hsv(it.ch,s2,v2),Size=Vector2.new(math.ceil(cw3)+1,math.ceil(ch3)+1),Position=Vector2.new(svX+ci2*cw3,svY+ri2*ch3),ZIndex=33,Visible=false})
                                 table.insert(cells,{d=sc,s=s2,v=v2})
                             end end
-                            mk("Square",{Filled=false,Color=C.surface2,Size=Vector2.new(svW,svH),Position=Vector2.new(svX,svY),Corner=3,Thickness=1,ZIndex=34,Visible=false})
-                            local svCur=mk("Square",{Filled=false,Color=C.wht,Size=Vector2.new(10,10),Position=Vector2.new(svX+math.floor(it.cs*svW)-5,svY+math.floor((1-it.cv)*svH)-5),Corner=5,Thickness=2,ZIndex=35,Visible=false})
-                            local prevY3=svY+svH+8
-                            local prevSw3=mk("Square",{Filled=true,Color=it.col,Size=Vector2.new(26,16),Position=Vector2.new(cpX+8,prevY3),Corner=4,ZIndex=33,Visible=false})
-                            mk("Square",{Filled=false,Color=C.surface1,Size=Vector2.new(26,16),Position=Vector2.new(cpX+8,prevY3),Corner=4,Thickness=1,ZIndex=34,Visible=false})
-                            local hexLbl2=mk("Text",{Text=hexStr(it.col),Size=FSX,Color=C.text,Font=FONT,Position=Vector2.new(cpX+40,prevY3+3),ZIndex=34,Visible=false})
-                            local presets2={C.mauve,C.blue,C.red,C.green,C.peach,C.pink,C.teal,C.lavender}
-                            local psX2=cpX+110; local psDs2={}
-                            for i2,pc in ipairs(presets2) do
-                                local col2=math.floor((i2-1)/4); local row2=(i2-1)%4
-                                local ps=mk("Square",{Filled=true,Color=pc,Size=Vector2.new(16,16),Position=Vector2.new(psX2+col2*20,prevY3+row2*0),Corner=3,ZIndex=33,Visible=false})
-                                table.insert(psDs2,{bg=ps,c=pc})
-                            end
-                            local psY3=prevY3; local psDs3={}
-                            for i2,pc in ipairs(presets2) do
-                                local col3=math.floor((i2-1)/4); local row3=(i2-1)%4
-                                local px3=cpX+110+col3*20; local py3=psY3+row3*9+math.floor(row3/1)*2
-                                local ps2=mk("Square",{Filled=true,Color=pc,Size=Vector2.new(16,16),Position=Vector2.new(px3,py3),Corner=3,ZIndex=33,Visible=false})
-                                local pb2=mk("Square",{Filled=false,Color=C.brd,Size=Vector2.new(16,16),Position=Vector2.new(px3,py3),Corner=3,Thickness=1,ZIndex=34,Visible=false})
-                                table.insert(psDs3,{bg=ps2,brd=pb2,c=pc,px=px3,py=py3})
-                            end
-                            local cpOpen=false
-                            local cpStartIdx=#secDs-(#cells+#psDs3*2+#hueSegs+20)
+                            cpMk("Square",{Filled=false,Color=C.surface2,Size=Vector2.new(svW,svH),Position=Vector2.new(svX,svY),Corner=2,Thickness=1,ZIndex=34,Visible=false})
+                            local svCur=cpMk("Square",{Filled=false,Color=C.wht,Size=Vector2.new(10,10),Position=Vector2.new(svX+math.floor(it.cs*svW)-5,svY+math.floor((1-it.cv)*svH)-5),Corner=5,Thickness=2,ZIndex=35,Visible=false})
 
-                            local function setAllCP(v)
-                                for j=cpStartIdx,#secDs do
-                                    if secDs[j] then secDs[j].Visible=v end
-                                end
+                            local botY=svY+svH+6
+                            local cpPrevBot=cpMk("Square",{Filled=true,Color=it.col,Size=Vector2.new(22,14),Position=Vector2.new(cpX+8,botY),Corner=4,ZIndex=33,Visible=false})
+                            cpMk("Square",{Filled=false,Color=C.surface1,Size=Vector2.new(22,14),Position=Vector2.new(cpX+8,botY),Corner=4,Thickness=1,ZIndex=34,Visible=false})
+                            local hexLbl=cpMk("Text",{Text=hexStr(it.col),Size=FSX,Color=C.text,Font=FONT,Position=Vector2.new(cpX+36,botY+2),ZIndex=34,Visible=false})
+
+                            local presets={C.mauve,C.blue,C.red,C.green,C.peach,C.pink,C.teal,C.lavender}
+                            local psStartX=cpX+cpW-8-#presets*17+1; local psDs={}
+                            for i2,pc in ipairs(presets) do
+                                local px2=psStartX+(i2-1)*17
+                                local ps=cpMk("Square",{Filled=true,Color=pc,Size=Vector2.new(14,14),Position=Vector2.new(px2,botY),Corner=3,ZIndex=33,Visible=false})
+                                local pb=cpMk("Square",{Filled=false,Color=C.brd,Size=Vector2.new(14,14),Position=Vector2.new(px2,botY),Corner=3,Thickness=1,ZIndex=34,Visible=false})
+                                table.insert(psDs,{bg=ps,brd=pb,c=pc,x=px2,y=botY})
+                            end
+
+                            local cpOpen=false
+                            local function setCPv(v)
+                                for _,o in ipairs(cpParts) do o.Visible=v end
                             end
 
                             if inV then
@@ -554,27 +556,32 @@ function SyftLib:Open()
                                     local d=ismouse1pressed(); local m2=mp()
                                     if d and not h.wd then
                                         if over(Vector2.new(swX-2,swY-2),Vector2.new(28,22)) then
-                                            cpOpen=not cpOpen; h.dH=false; h.dS=false; setAllCP(cpOpen)
+                                            cpOpen=not cpOpen; h.dH=false; h.dS=false; setCPv(cpOpen)
                                         elseif cpOpen then
-                                            if over(Vector2.new(hbX,hbY),Vector2.new(hbW,hbH)) then h.dH=true
-                                            elseif over(Vector2.new(svX,svY),Vector2.new(svW,svH)) then h.dS=true
-                                            elseif not over(cpBg.Position,cpBg.Size) then cpOpen=false; setAllCP(false) end
-                                            for _,ps in ipairs(psDs3) do
-                                                if over(Vector2.new(ps.px,ps.py),Vector2.new(16,16)) then
-                                                    capIt.col=ps.c; swBg.Color=ps.c; prevSw2.Color=ps.c; prevSw3.Color=ps.c; hexLbl2.Text=hexStr(ps.c)
-                                                    if capIt.cb then capIt.cb(ps.c) end; print("[COLOR]",hexStr(ps.c))
-                                                    cpOpen=false; setAllCP(false)
+                                            if over(Vector2.new(hbX,hbY),Vector2.new(hbW,hbH)) then
+                                                h.dH=true
+                                            elseif over(Vector2.new(svX,svY),Vector2.new(svW,svH)) then
+                                                h.dS=true
+                                            else
+                                                for _,ps in ipairs(psDs) do
+                                                    if over(Vector2.new(ps.x,ps.y),Vector2.new(14,14)) then
+                                                        capIt.col=ps.c; swBg.Color=ps.c
+                                                        cpPrevTop.Color=ps.c; cpPrevBot.Color=ps.c; hexLbl.Text=hexStr(ps.c)
+                                                        if capIt.cb then capIt.cb(ps.c) end; print("[COLOR]",hexStr(ps.c))
+                                                        cpOpen=false; setCPv(false)
+                                                    end
                                                 end
+                                                if not over(cpBg.Position,cpBg.Size) then cpOpen=false; setCPv(false) end
                                             end
                                         end
                                     end
                                     if not d then h.dH=false; h.dS=false end
                                     if h.dH and cpOpen then
                                         capIt.ch=math.clamp((m2.X-hbX)/hbW,0,1)
-                                        hCur.Position=Vector2.new(hbX+math.floor(capIt.ch*hbW)-1,hbY-3)
+                                        hCur.Position=Vector2.new(hbX+math.floor(capIt.ch*hbW)-1,hbY-2)
                                         for _,cl in ipairs(cells) do cl.d.Color=hsv(capIt.ch,cl.s,cl.v) end
                                         local nc=hsv(capIt.ch,capIt.cs,capIt.cv)
-                                        capIt.col=nc; swBg.Color=nc; prevSw2.Color=nc; prevSw3.Color=nc; hexLbl2.Text=hexStr(nc)
+                                        capIt.col=nc; swBg.Color=nc; cpPrevTop.Color=nc; cpPrevBot.Color=nc; hexLbl.Text=hexStr(nc)
                                         if capIt.cb then capIt.cb(nc) end
                                     end
                                     if h.dS and cpOpen then
@@ -582,7 +589,7 @@ function SyftLib:Open()
                                         capIt.cv=1-math.clamp((m2.Y-svY)/svH,0,1)
                                         svCur.Position=Vector2.new(svX+math.floor(capIt.cs*svW)-5,svY+math.floor((1-capIt.cv)*svH)-5)
                                         local nc=hsv(capIt.ch,capIt.cs,capIt.cv)
-                                        capIt.col=nc; swBg.Color=nc; prevSw2.Color=nc; prevSw3.Color=nc; hexLbl2.Text=hexStr(nc)
+                                        capIt.col=nc; swBg.Color=nc; cpPrevTop.Color=nc; cpPrevBot.Color=nc; hexLbl.Text=hexStr(nc)
                                         if capIt.cb then capIt.cb(nc) end
                                     end
                                     swBrd.Color=cpOpen and C.mauve or C.brd2; h.wd=d
