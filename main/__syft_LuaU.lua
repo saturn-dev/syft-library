@@ -140,13 +140,14 @@ function SyftLib:Open()
     local titTxt=D("Text",{Text=lib.title,Size=FS,Color=C.text,Font=FONTB,Position=Vector2.new(lib.px+14,lib.py+11),ZIndex=8,Visible=true})
 
     -- search icon + bar
-    local srW=148; local srBg,srBrd,srIcon,srTxt
+    local srW=148; local srBg,srBrd,srIcon,srIconL,srTxt
     if lib.doSearch then
         local sx=lib.px+tw(lib.title,FS)+26
         srBg  =D("Square",{Filled=true,Color=C.surface0,Size=Vector2.new(srW,22),Position=Vector2.new(sx,lib.py+8),Corner=6,ZIndex=7,Visible=true})
         srBrd =D("Square",{Filled=false,Color=C.brd,Size=Vector2.new(srW,22),Position=Vector2.new(sx,lib.py+8),Corner=6,Thickness=1,ZIndex=8,Visible=true})
         -- magnifier: circle + line
-        srIcon=D("Text",{Text="o/",Size=FSX,Color=C.overlay0,Font=FONT,Position=Vector2.new(sx+7,lib.py+12),ZIndex=9,Visible=true})
+        srIcon=D("Circle",{Radius=5,NumSides=12,Thickness=1.5,Color=C.overlay0,Filled=false,Position=Vector2.new(sx+12,lib.py+19),ZIndex=9,Visible=true})
+        srIconL=D("Line",{From=Vector2.new(sx+16,lib.py+23),To=Vector2.new(sx+19,lib.py+26),Thickness=1.5,Color=C.overlay0,ZIndex=9,Visible=true})
         srTxt =D("Text",{Text="search...",Size=FSX,Color=C.overlay0,Font=FONT,Position=Vector2.new(sx+22,lib.py+12),ZIndex=9,Visible=true})
     end
 
@@ -189,7 +190,10 @@ function SyftLib:Open()
         if srBg then
             local sx2=lib.px+tw(lib.title,FS)+26
             srBg.Position=Vector2.new(sx2,lib.py+8); srBrd.Position=srBg.Position
-            srIcon.Position=Vector2.new(sx2+7,lib.py+12); srTxt.Position=Vector2.new(sx2+22,lib.py+12)
+            local icX=sx2+12; local icY=lib.py+19
+            srIcon.Position=Vector2.new(icX,icY)
+            srIconL.From=Vector2.new(icX+4,icY+4); srIconL.To=Vector2.new(icX+7,icY+7)
+            srTxt.Position=Vector2.new(sx2+22,lib.py+12)
         end
         for _,td in ipairs(tabDs) do
             td.td.Position=Vector2.new(lib.px+TITLEW+td.relX,lib.py+11)
@@ -308,8 +312,6 @@ function SyftLib:Open()
                     elseif it.kind=="tog" then
                         if it._at==nil then it._at=it.val and 1 or 0 end
                         local capIt=it
-                        -- row bg fade
-                        local rowBg=mk("Square",{Filled=true,Color=Color3.new(capIt._at*C.mauve.R*0.1,capIt._at*C.mauve.G*0.1,capIt._at*C.mauve.B*0.1),Size=Vector2.new(colW2-2,IH),Position=Vector2.new(cx+1,iy),Corner=4,ZIndex=10,Visible=true})
                         local lblT=mk("Text",{Text=it.label,Size=FSS,Color=C.subtext1,Font=FONT,Position=Vector2.new(cx+PAD,iy+6),ZIndex=13,Visible=true})
                         local cbBg=mk("Square",{Filled=true,Color=lC(C.surface1,C.mauve,it._at),Size=Vector2.new(16,16),Position=Vector2.new(cx+colW2-PAD-16,iy+6),Corner=4,ZIndex=13,Visible=true})
                         local cbBrd=mk("Square",{Filled=false,Color=lC(C.surface1,C.mauve,it._at),Size=Vector2.new(16,16),Position=Vector2.new(cx+colW2-PAD-16,iy+6),Corner=4,Thickness=1,ZIndex=14,Visible=true})
@@ -337,9 +339,6 @@ function SyftLib:Open()
                                 local ac=lC(C.surface1,C.mauve,at)
                                 cbBg.Color=ac; cbBrd.Color=ac
                                 ck1.Visible=at>0.5; ck2.Visible=at>0.5
-                                -- row bg tint fade
-                                local rt=at*0.12
-                                rowBg.Color=Color3.new(C.mauve.R*rt,C.mauve.G*rt,C.mauve.B*rt)
                                 local hov=over(Vector2.new(capCX,capIY),Vector2.new(capCW,IH))
                                 lblT.Color=hov and C.text or lC(C.subtext1,C.text,at*0.6)
                                 h.wd=d
@@ -509,7 +508,7 @@ function SyftLib:Open()
                         local swBg =mk("Square",{Filled=true,Color=it.col,Size=Vector2.new(24,18),Position=Vector2.new(swX,swY),Corner=5,ZIndex=13,Visible=true})
                         local swBrd=mk("Square",{Filled=false,Color=C.brd2,Size=Vector2.new(24,18),Position=Vector2.new(swX,swY),Corner=5,Thickness=1,ZIndex=14,Visible=true})
 
-                        local cpW=200; local cpH=174
+                        local cpW=200; local cpH=192
                         local cpX=math.clamp(cx+math.floor(colW2/2)-math.floor(cpW/2),lib.px+4,lib.px+lib.sw-cpW-4)
                         local cpY=iy+IH+2
 
@@ -564,15 +563,16 @@ function SyftLib:Open()
                         cpMk("Square",{Filled=false,Color=C.surface1,Size=Vector2.new(22,14),Position=Vector2.new(cpX+8,botY),Corner=4,Thickness=1,ZIndex=34,Visible=false})
                         local hexLbl=cpMk("Text",{Text=hx(it.col),Size=FSX,Color=C.text,Font=FONT,Position=Vector2.new(cpX+36,botY+2),ZIndex=34,Visible=false})
 
-                        -- presets row right-aligned at bottom
+                        -- presets row: second line below preview+hex
                         local presets={C.mauve,C.blue,C.red,C.green,C.peach,C.pink,C.teal,C.lavender}
-                        local psW=14; local psGap=3; local totalPsW=#presets*(psW+psGap)-psGap
-                        local psStartX=cpX+cpW-8-totalPsW; local psDs={}
+                        local psW=14; local psGap=4; local psY2=botY+18
+                        local totalPsW=#presets*(psW+psGap)-psGap
+                        local psStartX=cpX+math.floor((cpW-totalPsW)/2); local psDs={}
                         for i2,pc in ipairs(presets) do
                             local px2=psStartX+(i2-1)*(psW+psGap)
-                            local ps=cpMk("Square",{Filled=true,Color=pc,Size=Vector2.new(psW,psW),Position=Vector2.new(px2,botY),Corner=3,ZIndex=33,Visible=false})
-                            local pb=cpMk("Square",{Filled=false,Color=C.brd,Size=Vector2.new(psW,psW),Position=Vector2.new(px2,botY),Corner=3,Thickness=1,ZIndex=34,Visible=false})
-                            table.insert(psDs,{bg=ps,brd=pb,c=pc,x=px2,y=botY})
+                            local ps=cpMk("Square",{Filled=true,Color=pc,Size=Vector2.new(psW,psW),Position=Vector2.new(px2,psY2),Corner=3,ZIndex=33,Visible=false})
+                            local pb=cpMk("Square",{Filled=false,Color=C.brd,Size=Vector2.new(psW,psW),Position=Vector2.new(px2,psY2),Corner=3,Thickness=1,ZIndex=34,Visible=false})
+                            table.insert(psDs,{bg=ps,brd=pb,c=pc,x=px2,y=psY2})
                         end
 
                         local cpOpen=false
@@ -714,13 +714,16 @@ function SyftLib:Open()
                 local sx2=lib.px+tw(lib.title,FS)+26
                 if srBg then
                     srBg.Position=Vector2.new(sx2,lib.py+8); srBrd.Position=srBg.Position
-                    srIcon.Position=Vector2.new(sx2+7,lib.py+12); srTxt.Position=Vector2.new(sx2+22,lib.py+12)
+                    local icX=sx2+12; local icY=lib.py+19
+            srIcon.Position=Vector2.new(icX,icY)
+            srIconL.From=Vector2.new(icX+4,icY+4); srIconL.To=Vector2.new(icX+7,icY+7)
+            srTxt.Position=Vector2.new(sx2+22,lib.py+12)
                 end
                 local d=ismouse1pressed()
                 if d then lib.sfocus=over(Vector2.new(sx2,lib.py+8),Vector2.new(srW,22)) end
                 if srBrd then srBrd.Color=lib.sfocus and C.mauve or C.brd end
                 if srBg then srBg.Color=lib.sfocus and C.surface1 or C.surface0 end
-                if srIcon then srIcon.Color=lib.sfocus and C.mauve or C.overlay0 end
+                if srIcon then srIcon.Color=lib.sfocus and C.mauve or C.overlay0; srIconL.Color=lib.sfocus and C.mauve or C.overlay0 end
                 if lib.sfocus then
                     for kc=8,90 do
                         if iskeypressed(kc) then
@@ -820,7 +823,7 @@ function SyftLib:Open()
                     winBg.Visible=v; winBrd.Visible=v; topBg.Visible=v; topFill.Visible=v
                     topBrd.Visible=v; titTxt.Visible=v; slideLine.Visible=v
                     maskTop.Visible=v; maskBot.Visible=v; maskL.Visible=v; maskR.Visible=v
-                    if srBg then srBg.Visible=v; srBrd.Visible=v; srIcon.Visible=v; srTxt.Visible=v end
+                    if srBg then srBg.Visible=v; srBrd.Visible=v; srIcon.Visible=v; srIconL.Visible=v; srTxt.Visible=v end
                     for _,td in ipairs(tabDs) do td.td.Visible=v end
                     for _,d2 in ipairs(secDs) do d2.Visible=v end
                     wd=true
