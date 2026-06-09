@@ -202,7 +202,7 @@ function SyftLib:Open()
         table.insert(loops,h)
         spawn(function()
             while not h.dead do
-                if not lib.dragging then fn(h) end
+                if lib.visible and not lib.dragging then fn(h) end
                 wait()
             end
         end)
