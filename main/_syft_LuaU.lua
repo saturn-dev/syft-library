@@ -64,6 +64,8 @@ function SyftLib.new(title)
     return self
 end
 function SyftLib:Search() self.doSearch=true end
+function SyftLib:SetTheme(name) end
+function SyftLib:GetThemeNames() return {"Default"} end
 
 function SyftLib:Tab(name)
     local tab={name=name,sections={}}
@@ -171,6 +173,7 @@ function SyftLib:Open()
     end
 
     local secDs={}; local loops={}
+    lib.dragging=false
     local function clearSecs()
         for _,d in ipairs(secDs) do d:Remove() end; secDs={}
         for _,h in ipairs(loops) do h.dead=true end; loops={}
@@ -182,7 +185,12 @@ function SyftLib:Open()
     local function sloop(fn)
         local h={dead=false,wd=false,drag=false,kd={},dH=false,dS=false}
         table.insert(loops,h)
-        spawn(function() while not h.dead do fn(h); wait() end end)
+        spawn(function()
+            while not h.dead do
+                if not lib.dragging then fn(h) end
+                wait()
+            end
+        end)
         return h
     end
 
@@ -637,9 +645,10 @@ function SyftLib:Open()
         end
     end)
 
-    -- DRAG loop: sections hidden during drag, rebuilt on release
+    -- DRAG loop: shift secDs by delta each frame, sloops paused via lib.dragging
     spawn(function()
         local wd=false; local drag=false; local startMX=0; local startMY=0; local startPX=0; local startPY=0
+        local lastPX=0; local lastPY=0
         while true do
             wait(0.016)
             if lib.visible then
@@ -647,21 +656,30 @@ function SyftLib:Open()
                 local mx=Mouse.X; local my=Mouse.Y
                 if d and not wd then
                     if mx>=lib.px and mx<lib.px+TITLEW and my>=lib.py and my<=lib.py+TB then
-                        drag=true; startMX=mx; startMY=my; startPX=lib.px; startPY=lib.py
-                        -- hide sections during drag to prevent visual glitch
-                        for _,sd in ipairs(secDs) do sd.Visible=false end
+                        drag=true; lib.dragging=true
+                        startMX=mx; startMY=my; startPX=lib.px; startPY=lib.py
+                        lastPX=lib.px; lastPY=lib.py
                     end
                 end
                 if drag and d then
                     lib.px=startPX+(mx-startMX); lib.py=startPY+(my-startMY)
-                    rebuildChrome()
+                    local dvx=lib.px-lastPX; local dvy=lib.py-lastPY
+                    if dvx~=0 or dvy~=0 then
+                        rebuildChrome()
+                        local dv=Vector2.new(dvx,dvy)
+                        for _,sd in ipairs(secDs) do
+                            if sd.Position then sd.Position=sd.Position+dv
+                            elseif sd.From then sd.From=sd.From+dv; sd.To=sd.To+dv end
+                        end
+                        lastPX=lib.px; lastPY=lib.py
+                    end
                 end
                 if not d and drag then
-                    drag=false
+                    drag=false; lib.dragging=false
                     buildSecs()
                 end
                 wd=d
-            else wd=false; drag=false end
+            else wd=false; drag=false; lib.dragging=false end
         end
     end)
 
