@@ -245,65 +245,6 @@ function SyftLib:Open()
                 mk("Square",{Filled=true,Color=C.brd,Size=Vector2.new(colW2,1),Position=Vector2.new(cx,cy+27),ZIndex=12,Visible=true})
                 mk("Square",{Filled=true,Color=C.mauve,Size=Vector2.new(3,14),Position=Vector2.new(cx+1,cy+7),Corner=2,ZIndex=13,Visible=true})
                 mk("Text",{Text=sec.title,Size=FSS,Color=C.text,Font=FONTB,Position=Vector2.new(cx+PAD,cy+7),ZIndex=13,Visible=true})
-                -- section border glow on hover (homesick-style perimeter glow)
-                do
-                    local glowLines={}
-                    local numSegs=24
-                    for _=1,numSegs do
-                        local gl=mk("Line",{}); gl.Thickness=2; gl.ZIndex=9; gl.Visible=false
-                        table.insert(glowLines,gl)
-                    end
-                    local capCX=cx; local capCY=cy; local capCW=colW2; local capCH=ch
-                    sloop(function(h)
-                        local mx2=Mouse.X; local my2=Mouse.Y
-                        local inSec=mOver(capCX,capCY,capCW,capCH)
-                        if not inSec then
-                            for _,gl in ipairs(glowLines) do gl.Visible=false end
-                            return
-                        end
-                        -- clamp mouse to nearest border point
-                        local ex=math.clamp(mx2,capCX,capCX+capCW)
-                        local ey=math.clamp(my2,capCY,capCY+capCH)
-                        local dL=math.abs(mx2-capCX); local dR=math.abs(mx2-(capCX+capCW))
-                        local dT=math.abs(my2-capCY); local dB=math.abs(my2-(capCY+capCH))
-                        local dMin=math.min(dL,dR,dT,dB)
-                        if dMin==dL then ex=capCX
-                        elseif dMin==dR then ex=capCX+capCW
-                        elseif dMin==dT then ey=capCY
-                        else ey=capCY+capCH end
-                        local dist=math.sqrt((mx2-ex)^2+(my2-ey)^2)
-                        local maxDist=80
-                        if dist>maxDist then
-                            for _,gl in ipairs(glowLines) do gl.Visible=false end
-                            return
-                        end
-                        local baseAlpha=(1-dist/maxDist)*0.7
-                        -- perimeter: top, right, bottom, left edges
-                        local perim=2*(capCW+capCH)
-                        local focusT
-                        if ey==capCY then focusT=(ex-capCX)/perim
-                        elseif ex==capCX+capCW then focusT=(capCW+(ey-capCY))/perim
-                        elseif ey==capCY+capCH then focusT=(capCW+capCH+(capCX+capCW-ex))/perim
-                        else focusT=(2*capCW+capCH+(capCY+capCH-ey))/perim end
-                        local spread=80/perim
-                        for i,gl in ipairs(glowLines) do
-                            local t1=focusT+(-spread/2+(i-1)*(spread/numSegs))
-                            local t2=t1+spread/numSegs
-                            t1=t1%1; t2=t2%1
-                            local function pt(t)
-                                t=t%1; local p2=perim*t
-                                if p2<=capCW then return capCX+p2,capCY
-                                elseif p2<=capCW+capCH then return capCX+capCW,capCY+(p2-capCW)
-                                elseif p2<=2*capCW+capCH then return capCX+capCW-(p2-capCW-capCH),capCY+capCH
-                                else return capCX,capCY+capCH-(p2-2*capCW-capCH) end
-                            end
-                            local x1,y1=pt(t1); local x2,y2=pt(t2)
-                            local seg=i/numSegs; local fade=1-math.abs(seg-0.5)*2
-                            gl.From=Vector2.new(x1,y1); gl.To=Vector2.new(x2,y2)
-                            gl.Color=C.mauve; gl.Transparency=baseAlpha*fade; gl.Visible=true
-                        end
-                    end)
-                end
                 local iy=cy+34
 
                 for _,it in ipairs(sec.items) do
@@ -344,7 +285,6 @@ function SyftLib:Open()
                             local lblT=mk("Text",{Text=it.label,Size=FSS,Color=C.subtext1,Font=FONT,Position=Vector2.new(cx+PAD,iy+6),ZIndex=13,Visible=true})
                             local cbGlow=mk("Square",{Filled=true,Color=C.mauve,Size=Vector2.new(22,22),Position=Vector2.new(cx+colW2-PAD-19,iy+3),Corner=6,ZIndex=12,Visible=true,Transparency=1-it._at*0.18})
                             local cbBg=mk("Square",{Filled=true,Color=lC(C.surface1,C.mauve,it._at),Size=Vector2.new(16,16),Position=Vector2.new(cx+colW2-PAD-16,iy+6),Corner=4,ZIndex=13,Visible=true})
-                            local cbBrd=mk("Square",{Filled=false,Color=lC(C.surface1,C.mauve,it._at),Size=Vector2.new(16,16),Position=Vector2.new(cx+colW2-PAD-16,iy+6),Corner=4,Thickness=1,ZIndex=14,Visible=true})
                             local bx2=cx+colW2-PAD-16; local by2=iy+6
                             local ck1=mk("Line",{}); ck1.From=Vector2.new(bx2+3,by2+8); ck1.To=Vector2.new(bx2+6,by2+12); ck1.Color=C.base; ck1.Thickness=1.8; ck1.ZIndex=15; ck1.Visible=it._at>0.5
                             local ck2=mk("Line",{}); ck2.From=Vector2.new(bx2+5,by2+12); ck2.To=Vector2.new(bx2+13,by2+5); ck2.Color=C.base; ck2.Thickness=1.8; ck2.ZIndex=15; ck2.Visible=it._at>0.5
@@ -358,7 +298,7 @@ function SyftLib:Open()
                                     end
                                     capIt._at=lN(capIt._at,capIt.val and 1 or 0,0.2)
                                     local ac=lC(C.surface1,C.mauve,capIt._at)
-                                    cbBg.Color=ac; cbBrd.Color=ac
+                                    cbBg.Color=ac
                                     cbGlow.Transparency=1-capIt._at*0.18
                                     ck1.Visible=capIt._at>0.5; ck2.Visible=capIt._at>0.5
                                     lblT.Color=vOver(Vector2.new(capCX,capIY),Vector2.new(capCW,IH)) and C.text or lC(C.subtext1,C.text,capIt._at*0.6)
@@ -649,20 +589,27 @@ function SyftLib:Open()
                             local function kbW(txt2) return math.max(50,math.floor(tw(txt2,FSX))+20) end
                             local initLbl="["..(KNAMES[it.kc] or "?").."]"
                             local curW=kbW(initLbl)
-                            local kbBg=mk("Square",{Filled=true,Color=C.surface0,Size=Vector2.new(curW,22),Position=Vector2.new(cx+colW2-PAD-curW,iy+4),Corner=5,ZIndex=13,Visible=true})
-                            local kbBrd=mk("Square",{Filled=false,Color=C.brd,Size=Vector2.new(curW,22),Position=Vector2.new(cx+colW2-PAD-curW,iy+4),Corner=5,Thickness=1,ZIndex=14,Visible=true})
-                            mk("Text",{Text=it.label,Size=FSS,Color=C.subtext1,Font=FONT,Position=Vector2.new(cx+PAD,iy+6),ZIndex=13,Visible=true})
-                            local kbTxt=mk("Text",{Text=initLbl,Size=FSX,Color=C.mauve,Font=FONTB,Position=Vector2.new(cx+colW2-PAD-curW+8,iy+7),ZIndex=15,Visible=true})
+                            local kbIY=iy  -- capture iy now before it advances
+                            local kbBg=mk("Square",{Filled=true,Color=C.surface0,Size=Vector2.new(curW,22),Position=Vector2.new(cx+colW2-PAD-curW,kbIY+4),Corner=5,ZIndex=13,Visible=true})
+                            local kbBrd=mk("Square",{Filled=false,Color=C.brd,Size=Vector2.new(curW,22),Position=Vector2.new(cx+colW2-PAD-curW,kbIY+4),Corner=5,Thickness=1,ZIndex=14,Visible=true})
+                            mk("Text",{Text=it.label,Size=FSS,Color=C.subtext1,Font=FONT,Position=Vector2.new(cx+PAD,kbIY+6),ZIndex=13,Visible=true})
+                            local kbTxt=mk("Text",{Text=initLbl,Size=FSX,Color=C.mauve,Font=FONTB,Position=Vector2.new(cx+colW2-PAD-curW+8,kbIY+7),ZIndex=15,Visible=true})
                             if inV then
                                 sloop(function(h)
                                     local d=ismouse1pressed()
                                     local hov=vOver(kbBg.Position,kbBg.Size)
                                     kbBg.Color=hov and C.surface1 or C.surface0
-                                    if d and not h.wd and hov then capIt.binding=true; kbTxt.Text="[...]"; kbBrd.Color=C.mauve end
+                                    if d and not h.wd and hov then
+                                        capIt.binding=true; kbTxt.Text="[...]"; kbBrd.Color=C.mauve
+                                        -- skip the current held mouse click from registering as a key
+                                        h.skipFirst=true
+                                    end
                                     if capIt.binding then
+                                        if h.skipFirst then h.skipFirst=false
+                                        else
                                         -- scan full VK range like homesick does
                                         for vk=1,255 do
-                                            if vk~=1 and vk~=2 and iskeypressed(vk) then
+                                            if vk~=1 and vk~=2 and not d and iskeypressed(vk) then
                                                 if not h.kd[vk] then
                                                     local kname2=KNAMES[vk] or ("VK"..vk)
                                                     capIt.kc=vk; capIt.binding=false
@@ -678,6 +625,7 @@ function SyftLib:Open()
                                                 end
                                             else h.kd[vk]=false end
                                         end
+                                        end -- skipFirst else
                                     end; h.wd=d
                                 end)
                             end
