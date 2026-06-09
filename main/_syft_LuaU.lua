@@ -776,128 +776,127 @@ function SyftLib:Open()
 
     buildSecs()
 
-    -- unified input loop: search + tabs + drag (one loop, no conflicts)
+    -- tabs
     spawn(function()
         local wd=false
-        local drag=false; local ds=nil; local spx=0; local spy=0
-        local lastQ=""
         while true do
-            if not lib.visible then
-                drag=false; wd=false
-                wait(0.05)
+            wait(0.016)
+            if not lib.visible then wd=false
             else
-                local d=ismouse1pressed(); local m2=mp()
-                local justDown=d and not wd
-
-                -- search bar position update
-                local sx2=lib.px+tw(lib.title,FS)+26
-                local srHitPos=Vector2.new(sx2,lib.py+8)
-                local srHitSz=Vector2.new(srW,22)
-                if srBg then
-                    srBg.Position=srHitPos; srBrd.Position=srHitPos
-                    srIcon.Position=Vector2.new(sx2+10,lib.py+19)
-                    srIconL.From=Vector2.new(sx2+13,lib.py+22); srIconL.To=Vector2.new(sx2+16,lib.py+25)
-                    srTxt.Position=Vector2.new(sx2+20,lib.py+12)
-                end
-
-                -- on fresh click: decide what was clicked
-                if justDown then
-                    local clickedSearch=lib.doSearch and over(srHitPos,srHitSz)
-                    local clickedTab=false
-                    local clickedTabIdx=0
+                local d=ismouse1pressed()
+                if d and not wd then
                     local tabAreaX=lib.px+TITLEW
                     for i=1,numT do
-                        if over(Vector2.new(tabAreaX+(i-1)*eTW,lib.py),Vector2.new(eTW,TB)) then
-                            clickedTab=true; clickedTabIdx=i; break
-                        end
-                    end
-                    local clickedTopbar=over(Vector2.new(lib.px,lib.py),Vector2.new(lib.sw,TB))
-
-                    if clickedSearch then
-                        lib.sfocus=true
-                    elseif clickedTab then
-                        lib.sfocus=false
-                        if lib.activeTab~=clickedTabIdx then
-                            lib.activeTab=clickedTabIdx; openDD=nil
-                            for j,td in ipairs(tabDs) do
-                                td.td.Color=(j==clickedTabIdx) and C.mauve or C.overlay1
-                                td.td.Font=(j==clickedTabIdx) and FONTB or FONT
-                            end
-                            slideRelX=(clickedTabIdx-1)*eTW+8
-                            buildSecs()
-                        end
-                    elseif clickedTopbar and not openDD and not clickedTab and not clickedSearch then
-                        lib.sfocus=false
-                        drag=true; ds=m2; spx=lib.px; spy=lib.py
-                    else
-                        if not over(srHitPos,srHitSz) then lib.sfocus=false end
-                    end
-                end
-
-                -- drag
-                if drag and d then
-                    local newPX=spx+(m2.X-ds.X); local newPY=spy+(m2.Y-ds.Y)
-                    local dx=newPX-lib.px; local dy=newPY-lib.py
-                    lib.px=newPX; lib.py=newPY
-                    rebuildChrome()
-                    -- move all section drawings by delta (no rebuild needed)
-                    if dx~=0 or dy~=0 then
-                        local dv=Vector2.new(dx,dy)
-                        for _,sd in ipairs(secDs) do
-                            if sd.Position then sd.Position=sd.Position+dv
-                            elseif sd.From then sd.From=sd.From+dv; sd.To=sd.To+dv
-                            elseif sd.PointA then sd.PointA=sd.PointA+dv; sd.PointB=sd.PointB+dv; sd.PointC=sd.PointC+dv
-                            end
-                        end
-                    end
-                end
-                if not d and drag then
-                    drag=false; buildSecs()
-                end
-
-                -- search styling
-                if srBrd then srBrd.Color=lib.sfocus and C.mauve or C.brd end
-                if srBg then srBg.Color=lib.sfocus and C.surface1 or C.surface0 end
-                if srIcon then
-                    local ic=lib.sfocus and C.mauve or C.overlay0
-                    srIcon.Color=ic; srIconL.Color=ic
-                end
-
-                -- search typing
-                if lib.sfocus then
-                    for kc=8,90 do
-                        if iskeypressed(kc) then
-                            if not lib.kdown[kc] then
-                                if kc==8 then lib.query=lib.query:sub(1,-2)
-                                elseif kc==27 then lib.sfocus=false
-                                elseif kc==32 then if #lib.query<20 then lib.query=lib.query.." " end
-                                elseif kc>=48 and kc<=57 then if #lib.query<20 then lib.query=lib.query..string.char(kc) end
-                                elseif kc>=65 and kc<=90 then
-                                    if #lib.query<20 then lib.query=lib.query..string.char(kc+32) end
+                        local tx2=tabAreaX+(i-1)*eTW
+                        if Mouse.X>=tx2 and Mouse.X<=tx2+eTW and Mouse.Y>=lib.py and Mouse.Y<=lib.py+TB then
+                            if lib.activeTab~=i then
+                                lib.activeTab=i; openDD=nil
+                                for j,td in ipairs(tabDs) do
+                                    td.td.Color=(j==i) and C.mauve or C.overlay1
+                                    td.td.Font=(j==i) and FONTB or FONT
                                 end
-                                lib.kdown[kc]=true
+                                slideRelX=(i-1)*eTW+8
+                                buildSecs()
                             end
-                        else lib.kdown[kc]=false end
+                            break
+                        end
                     end
                 end
-
-                if srTxt then
-                    srTxt.Text=lib.query=="" and "search..." or lib.query
-                    srTxt.Color=lib.query=="" and C.overlay0 or C.text
-                end
-                if lib.query~=lastQ then lastQ=lib.query; buildSecs() end
-
-                -- slide animation (runs every frame)
                 slideRelXCur=lN(slideRelXCur,slideRelX,0.22)
                 slideLine.Position=Vector2.new(lib.px+TITLEW+slideRelXCur,lib.py+TB-3)
-
                 wd=d
-                wait(0.016)
             end
         end
     end)
 
-    -- scroll
+    -- drag
+    spawn(function()
+        local wd=false; local drag=false; local ds=nil; local spx=0; local spy=0
+        while true do
+            wait(0.016)
+            if not lib.visible then wd=false; drag=false
+            else
+                local d=ismouse1pressed()
+                local mx=Mouse.X; local my=Mouse.Y
+                if d and not wd then
+                    -- only drag if click is in title area (left of tabs)
+                    if mx>=lib.px and mx<=lib.px+TITLEW and my>=lib.py and my<=lib.py+TB then
+                        drag=true; ds=Vector2.new(mx,my); spx=lib.px; spy=lib.py
+                    end
+                end
+                if not d then
+                    if drag then buildSecs() end
+                    drag=false
+                end
+                if drag and d then
+                    local newPX=spx+(mx-ds.X); local newPY=spy+(my-ds.Y)
+                    local dv=Vector2.new(newPX-lib.px,newPY-lib.py)
+                    lib.px=newPX; lib.py=newPY
+                    rebuildChrome()
+                    for _,sd in ipairs(secDs) do
+                        if sd.Position then sd.Position=sd.Position+dv
+                        elseif sd.From then sd.From=sd.From+dv; sd.To=sd.To+dv
+                        elseif sd.PointA then sd.PointA=sd.PointA+dv; sd.PointB=sd.PointB+dv; sd.PointC=sd.PointC+dv
+                        end
+                    end
+                end
+                wd=d
+            end
+        end
+    end)
+
+    -- search
+    if lib.doSearch then
+        spawn(function()
+            local wd=false; local lastQ=""
+            while true do
+                wait(0.016)
+                if not lib.visible then wd=false
+                else
+                    local sx2=lib.px+tw(lib.title,FS)+26
+                    if srBg then
+                        srBg.Position=Vector2.new(sx2,lib.py+8); srBrd.Position=srBg.Position
+                        srIcon.Position=Vector2.new(sx2+10,lib.py+19)
+                        srIconL.From=Vector2.new(sx2+13,lib.py+22); srIconL.To=Vector2.new(sx2+16,lib.py+25)
+                        srTxt.Position=Vector2.new(sx2+20,lib.py+12)
+                    end
+                    local d=ismouse1pressed()
+                    if d and not wd then
+                        local mx=Mouse.X; local my=Mouse.Y
+                        if mx>=sx2 and mx<=sx2+srW and my>=lib.py+8 and my<=lib.py+30 then
+                            lib.sfocus=true
+                        else
+                            lib.sfocus=false
+                        end
+                    end
+                    if srBrd then srBrd.Color=lib.sfocus and C.mauve or C.brd end
+                    if srBg then srBg.Color=lib.sfocus and C.surface1 or C.surface0 end
+                    if srIcon then srIcon.Color=lib.sfocus and C.mauve or C.overlay0; srIconL.Color=lib.sfocus and C.mauve or C.overlay0 end
+                    if lib.sfocus then
+                        for kc=8,90 do
+                            if iskeypressed(kc) then
+                                if not lib.kdown[kc] then
+                                    if kc==8 then lib.query=lib.query:sub(1,-2)
+                                    elseif kc==27 then lib.sfocus=false
+                                    elseif kc==32 then if #lib.query<20 then lib.query=lib.query.." " end
+                                    elseif kc>=48 and kc<=57 then if #lib.query<20 then lib.query=lib.query..string.char(kc) end
+                                    elseif kc>=65 and kc<=90 then if #lib.query<20 then lib.query=lib.query..string.char(kc+32) end
+                                    end
+                                    lib.kdown[kc]=true
+                                end
+                            else lib.kdown[kc]=false end
+                        end
+                    end
+                    srTxt.Text=lib.query=="" and "search..." or lib.query
+                    srTxt.Color=lib.query=="" and C.overlay0 or C.text
+                    if lib.query~=lastQ then lastQ=lib.query; buildSecs() end
+                    wd=d
+                end
+            end
+        end)
+    end
+
+        -- scroll
     spawn(function()
         while true do
             if not lib.visible then wait(0.05) else
