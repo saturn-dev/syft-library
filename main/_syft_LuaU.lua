@@ -246,6 +246,34 @@ function SyftLib:Open()
                 mk("Square",{Filled=true,Color=C.brd,Size=Vector2.new(colW2,1),Position=Vector2.new(cx,cy+27),ZIndex=12,Visible=true})
                 mk("Square",{Filled=true,Color=C.mauve,Size=Vector2.new(3,14),Position=Vector2.new(cx+1,cy+7),Corner=2,ZIndex=13,Visible=true})
                 mk("Text",{Text=sec.title,Size=FSS,Color=C.text,Font=FONTB,Position=Vector2.new(cx+PAD,cy+7),ZIndex=13,Visible=true})
+                -- lightweight border glow: 4 edge lines that brighten near mouse
+                do
+                    local scx=cx; local scy=cy; local scw=colW2; local sch=ch
+                    local gl={}
+                    for _=1,4 do local l=mk("Line",{}); l.Thickness=2; l.ZIndex=9; l.Visible=false; gl[#gl+1]=l end
+                    sloop(function()
+                        local mx2=Mouse.X; local my2=Mouse.Y
+                        local inSec=mOver(scx,scy,scw,sch)
+                        if not inSec then for _,l in ipairs(gl) do l.Visible=false end; return end
+                        local dL=mx2-scx; local dR=(scx+scw)-mx2
+                        local dT=my2-scy; local dB=(scy+sch)-my2
+                        local dMin=math.min(dL,dR,dT,dB)
+                        local maxD=60
+                        local a=math.max(0,(1-dMin/maxD)*0.55)
+                        -- top
+                        gl[1].From=Vector2.new(scx+8,scy); gl[1].To=Vector2.new(scx+scw-8,scy)
+                        gl[1].Color=C.mauve; gl[1].Transparency=a*(dT<maxD and 1 or 0.1); gl[1].Visible=true
+                        -- bottom
+                        gl[2].From=Vector2.new(scx+8,scy+sch); gl[2].To=Vector2.new(scx+scw-8,scy+sch)
+                        gl[2].Color=C.mauve; gl[2].Transparency=a*(dB<maxD and 1 or 0.1); gl[2].Visible=true
+                        -- left
+                        gl[3].From=Vector2.new(scx,scy+8); gl[3].To=Vector2.new(scx,scy+sch-8)
+                        gl[3].Color=C.mauve; gl[3].Transparency=a*(dL<maxD and 1 or 0.1); gl[3].Visible=true
+                        -- right
+                        gl[4].From=Vector2.new(scx+scw,scy+8); gl[4].To=Vector2.new(scx+scw,scy+sch-8)
+                        gl[4].Color=C.mauve; gl[4].Transparency=a*(dR<maxD and 1 or 0.1); gl[4].Visible=true
+                    end)
+                end
                 local iy=cy+34
 
                 for _,it in ipairs(sec.items) do
@@ -786,7 +814,8 @@ function SyftLib:Open()
         end
     end)
 
-    -- TOGGLE KEY: use RenderStepped like homesick for guaranteed per-frame polling
+    -- TOGGLE KEY: RenderStepped for guaranteed per-frame polling
+    -- On hide: just mark invisible. On show: restore visibility (no rebuild needed).
     local toggleKeyPrev=false
     local RS=game:GetService("RunService")
     RS.RenderStepped:Connect(function()
@@ -799,8 +828,9 @@ function SyftLib:Open()
                 topBrd.Visible=v; titTxt.Visible=v; slideLine.Visible=v
                 if srBg then srBg.Visible=v; srBrd.Visible=v; srIcon.Visible=v; srIconL.Visible=v; srTxt.Visible=v end
                 for _,td in ipairs(tabDs) do td.td.Visible=v end
-                if v then rebuildChrome(); buildSecs()
-                else clearSecs() end
+                -- show: restore secDs visibility. hide: hide secDs. No rebuild.
+                for _,d2 in ipairs(secDs) do d2.Visible=v end
+                if v and #secDs==0 then rebuildChrome(); buildSecs() end
             end
             toggleKeyPrev=down
         end
