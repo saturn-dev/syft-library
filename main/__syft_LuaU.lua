@@ -34,7 +34,19 @@ local FONT=Drawing.Fonts.System; local FONTB=Drawing.Fonts.SystemBold
 local FS=14; local FSS=13; local FSX=12
 local TB=38; local IH=28; local BH=30; local SH=44; local DIH=24; local PAD=12; local CP=8
 
-local KCODES={None=0,Space=0x20,Enter=0x0D,Backspace=0x08,Escape=0x1B,Delete=0x2E,Insert=0x2D,F1=0x70,F2=0x71,F3=0x72,F4=0x73,F5=0x74,F6=0x75,F7=0x76,F8=0x77,F9=0x78,F10=0x79,F11=0x7A,F12=0x7B,A=0x41,B=0x42,C=0x43,D=0x44,E=0x45,F=0x46,G=0x47,H=0x48,I=0x49,J=0x4A,K=0x4B,L=0x4C,M=0x4D,N=0x4E,O=0x4F,P=0x50,Q=0x51,R=0x52,S=0x53,T=0x54,U=0x55,V=0x56,W=0x57,X=0x58,Y=0x59,Z=0x5A,Num0=0x30,Num1=0x31,Num2=0x32,Num3=0x33,Num4=0x34,Num5=0x35,Num6=0x36,Num7=0x37,Num8=0x38,Num9=0x39}
+local KCODES={
+    None=0,Space=0x20,Enter=0x0D,Backspace=0x08,Escape=0x1B,Delete=0x2E,Insert=0x2D,
+    Tab=0x09,Shift=0x10,Ctrl=0x11,Alt=0x12,CapsLock=0x14,
+    Left=0x25,Up=0x26,Right=0x27,Down=0x28,PageUp=0x21,PageDown=0x22,Home=0x23,End=0x24,
+    F1=0x70,F2=0x71,F3=0x72,F4=0x73,F5=0x74,F6=0x75,F7=0x76,F8=0x77,F9=0x78,F10=0x79,F11=0x7A,F12=0x7B,
+    A=0x41,B=0x42,C=0x43,D=0x44,E=0x45,F=0x46,G=0x47,H=0x48,I=0x49,J=0x4A,K=0x4B,L=0x4C,M=0x4D,
+    N=0x4E,O=0x4F,P=0x50,Q=0x51,R=0x52,S=0x53,T=0x54,U=0x55,V=0x56,W=0x57,X=0x58,Y=0x59,Z=0x5A,
+    Num0=0x30,Num1=0x31,Num2=0x32,Num3=0x33,Num4=0x34,Num5=0x35,Num6=0x36,Num7=0x37,Num8=0x38,Num9=0x39,
+    Numpad0=0x60,Numpad1=0x61,Numpad2=0x62,Numpad3=0x63,Numpad4=0x64,Numpad5=0x65,Numpad6=0x66,Numpad7=0x67,Numpad8=0x68,Numpad9=0x69,
+    NumpadMul=0x6A,NumpadAdd=0x6B,NumpadSub=0x6D,NumpadDot=0x6E,NumpadDiv=0x6F,
+    Semicolon=0xBA,Equals=0xBB,Comma=0xBC,Minus=0xBD,Period=0xBE,Slash=0xBF,Tilde=0xC0,
+    LBracket=0xDB,Backslash=0xDC,RBracket=0xDD,Quote=0xDE,
+}
 local KNAMES={}; for k,v in pairs(KCODES) do KNAMES[v]=k end
 
 local function D(t,p) local o=Drawing.new(t); for k,v in pairs(p) do o[k]=v end; table.insert(drawings,o); return o end
@@ -330,7 +342,7 @@ function SyftLib:Open()
                             if it._at==nil then it._at=it.val and 1 or 0 end
                             local capIt=it
                             local lblT=mk("Text",{Text=it.label,Size=FSS,Color=C.subtext1,Font=FONT,Position=Vector2.new(cx+PAD,iy+6),ZIndex=13,Visible=true})
-                            local cbGlow=mk("Square",{Filled=true,Color=C.mauve,Size=Vector2.new(22,22),Position=Vector2.new(cx+colW2-PAD-19,iy+3),Corner=6,ZIndex=12,Visible=true})
+                            local cbGlow=mk("Square",{Filled=true,Color=C.mauve,Size=Vector2.new(22,22),Position=Vector2.new(cx+colW2-PAD-19,iy+3),Corner=6,ZIndex=12,Visible=true,Transparency=1-it._at*0.18})
                             local cbBg=mk("Square",{Filled=true,Color=lC(C.surface1,C.mauve,it._at),Size=Vector2.new(16,16),Position=Vector2.new(cx+colW2-PAD-16,iy+6),Corner=4,ZIndex=13,Visible=true})
                             local cbBrd=mk("Square",{Filled=false,Color=lC(C.surface1,C.mauve,it._at),Size=Vector2.new(16,16),Position=Vector2.new(cx+colW2-PAD-16,iy+6),Corner=4,Thickness=1,ZIndex=14,Visible=true})
                             local bx2=cx+colW2-PAD-16; local by2=iy+6
@@ -347,7 +359,7 @@ function SyftLib:Open()
                                     capIt._at=lN(capIt._at,capIt.val and 1 or 0,0.2)
                                     local ac=lC(C.surface1,C.mauve,capIt._at)
                                     cbBg.Color=ac; cbBrd.Color=ac
-                                    cbGlow.Transparency=capIt._at*0.18
+                                    cbGlow.Transparency=1-capIt._at*0.18
                                     ck1.Visible=capIt._at>0.5; ck2.Visible=capIt._at>0.5
                                     lblT.Color=vOver(Vector2.new(capCX,capIY),Vector2.new(capCW,IH)) and C.text or lC(C.subtext1,C.text,capIt._at*0.6)
                                     h.wd=d
@@ -634,10 +646,13 @@ function SyftLib:Open()
 
                         elseif it.kind=="kb" then
                             local capIt=it
-                            local kbBg=mk("Square",{Filled=true,Color=C.surface0,Size=Vector2.new(74,22),Position=Vector2.new(cx+colW2-PAD-74,iy+4),Corner=5,ZIndex=13,Visible=true})
-                            local kbBrd=mk("Square",{Filled=false,Color=C.brd,Size=Vector2.new(74,22),Position=Vector2.new(cx+colW2-PAD-74,iy+4),Corner=5,Thickness=1,ZIndex=14,Visible=true})
+                            local function kbW(txt2) return math.max(50,math.floor(tw(txt2,FSX))+20) end
+                            local initLbl="["..(KNAMES[it.kc] or "?").."]"
+                            local curW=kbW(initLbl)
+                            local kbBg=mk("Square",{Filled=true,Color=C.surface0,Size=Vector2.new(curW,22),Position=Vector2.new(cx+colW2-PAD-curW,iy+4),Corner=5,ZIndex=13,Visible=true})
+                            local kbBrd=mk("Square",{Filled=false,Color=C.brd,Size=Vector2.new(curW,22),Position=Vector2.new(cx+colW2-PAD-curW,iy+4),Corner=5,Thickness=1,ZIndex=14,Visible=true})
                             mk("Text",{Text=it.label,Size=FSS,Color=C.subtext1,Font=FONT,Position=Vector2.new(cx+PAD,iy+6),ZIndex=13,Visible=true})
-                            local kbTxt=mk("Text",{Text="["..(KNAMES[it.kc] or "?").."]",Size=FSX,Color=C.mauve,Font=FONTB,Position=Vector2.new(cx+colW2-PAD-74+8,iy+7),ZIndex=15,Visible=true})
+                            local kbTxt=mk("Text",{Text=initLbl,Size=FSX,Color=C.mauve,Font=FONTB,Position=Vector2.new(cx+colW2-PAD-curW+8,iy+7),ZIndex=15,Visible=true})
                             if inV then
                                 sloop(function(h)
                                     local d=ismouse1pressed()
@@ -645,14 +660,23 @@ function SyftLib:Open()
                                     kbBg.Color=hov and C.surface1 or C.surface0
                                     if d and not h.wd and hov then capIt.binding=true; kbTxt.Text="[...]"; kbBrd.Color=C.mauve end
                                     if capIt.binding then
-                                        for kname2,kc2 in pairs(KCODES) do
-                                            if kc2~=0 and iskeypressed(kc2) then
-                                                if not h.kd[kc2] then
-                                                    capIt.kc=kc2; capIt.binding=false; kbTxt.Text="["..kname2.."]"; kbBrd.Color=C.brd
-                                                    if capIt.cb then capIt.cb(kc2,kname2) end
-                                                    h.kd[kc2]=true
+                                        -- scan full VK range like homesick does
+                                        for vk=1,255 do
+                                            if vk~=1 and vk~=2 and iskeypressed(vk) then
+                                                if not h.kd[vk] then
+                                                    local kname2=KNAMES[vk] or ("VK"..vk)
+                                                    capIt.kc=vk; capIt.binding=false
+                                                    local newLbl="["..kname2.."]"
+                                                    local newW=kbW(newLbl)
+                                                    kbTxt.Text=newLbl; kbBrd.Color=C.brd
+                                                    kbBg.Size=Vector2.new(newW,22); kbBrd.Size=Vector2.new(newW,22)
+                                                    kbBg.Position=Vector2.new(cx+colW2-PAD-newW,iy+4)
+                                                    kbBrd.Position=kbBg.Position
+                                                    kbTxt.Position=Vector2.new(cx+colW2-PAD-newW+8,iy+7)
+                                                    if capIt.cb then capIt.cb(vk,kname2) end
+                                                    h.kd[vk]=true
                                                 end
-                                            else h.kd[kc2]=false end
+                                            else h.kd[vk]=false end
                                         end
                                     end; h.wd=d
                                 end)
@@ -813,25 +837,23 @@ function SyftLib:Open()
         end
     end)
 
-    -- TOGGLE KEY loop: mirrors Arcane pattern exactly - tight loop, no wait arg
+    -- TOGGLE KEY: use RenderStepped like homesick for guaranteed per-frame polling
     local toggleKeyPrev=false
-    spawn(function()
-        while true do
-            wait()
-            if lib.toggleKey~=0 then
-                local down=iskeypressed(lib.toggleKey)
-                if down and not toggleKeyPrev then
-                    lib.visible=not lib.visible
-                    local v=lib.visible
-                    winBg.Visible=v; winBrd.Visible=v; topBg.Visible=v; topFill.Visible=v
-                    topBrd.Visible=v; titTxt.Visible=v; slideLine.Visible=v
-                    if srBg then srBg.Visible=v; srBrd.Visible=v; srIcon.Visible=v; srIconL.Visible=v; srTxt.Visible=v end
-                    for _,td in ipairs(tabDs) do td.td.Visible=v end
-                    if v then rebuildChrome(); buildSecs()
-                    else clearSecs() end
-                end
-                toggleKeyPrev=down
+    local RS=game:GetService("RunService")
+    RS.RenderStepped:Connect(function()
+        if lib.toggleKey~=0 then
+            local down=iskeypressed(lib.toggleKey)
+            if down and not toggleKeyPrev then
+                lib.visible=not lib.visible
+                local v=lib.visible
+                winBg.Visible=v; winBrd.Visible=v; topBg.Visible=v; topFill.Visible=v
+                topBrd.Visible=v; titTxt.Visible=v; slideLine.Visible=v
+                if srBg then srBg.Visible=v; srBrd.Visible=v; srIcon.Visible=v; srIconL.Visible=v; srTxt.Visible=v end
+                for _,td in ipairs(tabDs) do td.td.Visible=v end
+                if v then rebuildChrome(); buildSecs()
+                else clearSecs() end
             end
+            toggleKeyPrev=down
         end
     end)
 end
