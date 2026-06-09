@@ -523,6 +523,7 @@ function SyftLib:Open()
                                 dBg.Color=lC(C.surface0,C.surface1,capIt._hc)
                                 dBrd.Color=lC(C.brd,C.mauve,capIt._hc)
                                 dTxt.Color=lC(C.subtext1,C.text,capIt._hc)
+                                dArr.Color=lC(C.overlay0,C.mauve,capIt._hc)
                                 if d and not h.wd then
                                     if hov then
                                         if openDD==sid then capIt.open=false; openDD=nil
@@ -775,25 +776,80 @@ function SyftLib:Open()
 
     buildSecs()
 
-    -- search loop
-    if lib.doSearch then
-        spawn(function()
-            local lastQ=""
-            while true do
-                if not lib.visible then wait(0.05) else
+    -- unified input loop: search + tabs + drag (one loop, no conflicts)
+    spawn(function()
+        local wd=false
+        local drag=false; local ds=nil; local spx=0; local spy=0
+        local lastQ=""
+        while true do
+            if not lib.visible then
+                drag=false; wd=false
+                wait(0.05)
+            else
+                local d=ismouse1pressed(); local m2=mp()
+                local justDown=d and not wd
+
+                -- search bar position update
                 local sx2=lib.px+tw(lib.title,FS)+26
+                local srHitPos=Vector2.new(sx2,lib.py+8)
+                local srHitSz=Vector2.new(srW,22)
                 if srBg then
-                    srBg.Position=Vector2.new(sx2,lib.py+8); srBrd.Position=srBg.Position
-                    local icX=sx2+10; local icY=lib.py+19
-            srIcon.Position=Vector2.new(icX,icY)
-            srIconL.From=Vector2.new(icX+3,icY+3); srIconL.To=Vector2.new(icX+6,icY+6)
-            srTxt.Position=Vector2.new(sx2+22,lib.py+12)
+                    srBg.Position=srHitPos; srBrd.Position=srHitPos
+                    srIcon.Position=Vector2.new(sx2+10,lib.py+19)
+                    srIconL.From=Vector2.new(sx2+13,lib.py+22); srIconL.To=Vector2.new(sx2+16,lib.py+25)
+                    srTxt.Position=Vector2.new(sx2+20,lib.py+12)
                 end
-                local d=ismouse1pressed()
-                if d then lib.sfocus=over(Vector2.new(sx2,lib.py+8),Vector2.new(srW,22)) end
+
+                -- on fresh click: decide what was clicked
+                if justDown then
+                    local clickedSearch=lib.doSearch and over(srHitPos,srHitSz)
+                    local clickedTab=false
+                    local clickedTabIdx=0
+                    for i=1,numT do
+                        if over(Vector2.new(lib.px+TITLEW+(i-1)*eTW,lib.py),Vector2.new(eTW,TB)) then
+                            clickedTab=true; clickedTabIdx=i; break
+                        end
+                    end
+                    local clickedTopbar=over(Vector2.new(lib.px,lib.py),Vector2.new(lib.sw,TB))
+
+                    if clickedSearch then
+                        lib.sfocus=true
+                    elseif clickedTab then
+                        lib.sfocus=false
+                        if lib.activeTab~=clickedTabIdx then
+                            lib.activeTab=clickedTabIdx; openDD=nil
+                            for j,td in ipairs(tabDs) do
+                                td.td.Color=(j==clickedTabIdx) and C.mauve or C.overlay1
+                                td.td.Font=(j==clickedTabIdx) and FONTB or FONT
+                            end
+                            slideRelX=(clickedTabIdx-1)*eTW+8
+                            buildSecs()
+                        end
+                    elseif clickedTopbar and not openDD then
+                        lib.sfocus=false
+                        drag=true; ds=m2; spx=lib.px; spy=lib.py
+                    else
+                        if not over(srHitPos,srHitSz) then lib.sfocus=false end
+                    end
+                end
+
+                if not d then drag=false end
+
+                -- drag
+                if drag and d then
+                    lib.px=spx+(m2.X-ds.X); lib.py=spy+(m2.Y-ds.Y)
+                    rebuildChrome(); buildSecs()
+                end
+
+                -- search styling
                 if srBrd then srBrd.Color=lib.sfocus and C.mauve or C.brd end
                 if srBg then srBg.Color=lib.sfocus and C.surface1 or C.surface0 end
-                if srIcon then srIcon.Color=lib.sfocus and C.mauve or C.overlay0; srIconL.Color=lib.sfocus and C.mauve or C.overlay0 end
+                if srIcon then
+                    local ic=lib.sfocus and C.mauve or C.overlay0
+                    srIcon.Color=ic; srIconL.Color=ic
+                end
+
+                -- search typing
                 if lib.sfocus then
                     for kc=8,90 do
                         if iskeypressed(kc) then
@@ -802,68 +858,28 @@ function SyftLib:Open()
                                 elseif kc==27 then lib.sfocus=false
                                 elseif kc==32 then if #lib.query<20 then lib.query=lib.query.." " end
                                 elseif kc>=48 and kc<=57 then if #lib.query<20 then lib.query=lib.query..string.char(kc) end
-                                elseif kc>=65 and kc<=90 then if #lib.query<20 then lib.query=lib.query..string.char(kc+32) end
-                                end; lib.kdown[kc]=true
+                                elseif kc>=65 and kc<=90 then
+                                    if #lib.query<20 then lib.query=lib.query..string.char(kc+32) end
+                                end
+                                lib.kdown[kc]=true
                             end
                         else lib.kdown[kc]=false end
                     end
                 end
+
                 if srTxt then
                     srTxt.Text=lib.query=="" and "search..." or lib.query
                     srTxt.Color=lib.query=="" and C.overlay0 or C.text
                 end
                 if lib.query~=lastQ then lastQ=lib.query; buildSecs() end
+
+                -- slide animation (runs every frame)
+                slideRelXCur=lN(slideRelXCur,slideRelX,0.22)
+                slideLine.Position=Vector2.new(lib.px+TITLEW+slideRelXCur,lib.py+TB-3)
+
+                wd=d
                 wait(0.016)
-                end
             end
-        end)
-    end
-
-    -- tab switching + slide animation
-    spawn(function()
-        local wd=false
-        while true do
-            if lib.visible then
-            local d=ismouse1pressed()
-            for i=1,numT do
-                local tapX=lib.px+TITLEW+(i-1)*eTW
-                if over(Vector2.new(tapX,lib.py),Vector2.new(eTW,TB)) and d and not wd and not openDD and not lib.sfocus then
-                    if lib.activeTab~=i then
-                        lib.activeTab=i; openDD=nil
-                        for j,td in ipairs(tabDs) do
-                            td.td.Color=(j==i) and C.mauve or C.overlay1
-                            td.td.Font=(j==i) and FONTB or FONT
-                        end
-                        slideRelX=(i-1)*eTW+8
-                        buildSecs()
-                    end
-                end
-            end
-            slideRelXCur=lN(slideRelXCur,slideRelX,0.22)
-            slideLine.Position=Vector2.new(lib.px+TITLEW+slideRelXCur,lib.py+TB-3)
-            wd=d
-            else wd=false end
-            wait(0.016)
-        end
-    end)
-
-    -- drag
-    spawn(function()
-        local drag=false; local ds=nil; local spx=0; local spy=0; local wd=false
-        while true do
-            if lib.visible then
-            local d=ismouse1pressed(); local m2=mp()
-            if d and not wd and over(Vector2.new(lib.px,lib.py),Vector2.new(lib.sw,TB)) and not openDD and not lib.sfocus then
-                drag=true; ds=m2; spx=lib.px; spy=lib.py
-            end
-            if not d then drag=false end
-            if drag then
-                lib.px=spx+(m2.X-ds.X); lib.py=spy+(m2.Y-ds.Y)
-                rebuildChrome(); buildSecs()
-            end
-            wd=d
-            else drag=false; wd=false end
-            wait(0.016)
         end
     end)
 
