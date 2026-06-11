@@ -246,32 +246,51 @@ function SyftLib:Open()
                 mk("Square",{Filled=true,Color=C.brd,Size=Vector2.new(colW2,1),Position=Vector2.new(cx,cy+27),ZIndex=12,Visible=true})
                 mk("Square",{Filled=true,Color=C.mauve,Size=Vector2.new(3,14),Position=Vector2.new(cx+1,cy+7),Corner=2,ZIndex=13,Visible=true})
                 mk("Text",{Text=sec.title,Size=FSS,Color=C.text,Font=FONTB,Position=Vector2.new(cx+PAD,cy+7),ZIndex=13,Visible=true})
-                -- lightweight border glow: 4 edge lines that brighten near mouse
+                -- perimeter glow: 24 short segments following rounded rect border
                 do
-                    local scx=cx; local scy=cy; local scw=colW2; local sch=ch
+                    local scx=cx; local scy=cy; local scw=colW2; local sch=ch; local R=8
+                    local N=24
                     local gl={}
-                    for _=1,4 do local l=mk("Line",{}); l.Thickness=2; l.ZIndex=9; l.Visible=false; gl[#gl+1]=l end
+                    for _=1,N do local l=mk("Line",{}); l.Thickness=1.5; l.ZIndex=9; l.Visible=false; gl[#gl+1]=l end
+                    local sin=math.sin; local cos=math.cos; local pi=math.pi
+                    local topLen=scw-2*R; local sideLen=sch-2*R; local cArc=0.5*pi*R
+                    local perim=2*(topLen+sideLen)+4*cArc
+                    local function pt(t)
+                        local d=(t%1)*perim
+                        if d<topLen then return scx+R+d,scy end; d=d-topLen
+                        if d<cArc then local a=-pi/2+d/R; return scx+scw-R+cos(a)*R,scy+R+sin(a)*R end; d=d-cArc
+                        if d<sideLen then return scx+scw,scy+R+d end; d=d-sideLen
+                        if d<cArc then local a=d/R; return scx+scw-R+cos(a)*R,scy+sch-R+sin(a)*R end; d=d-cArc
+                        if d<topLen then return scx+scw-R-d,scy+sch end; d=d-topLen
+                        if d<cArc then local a=pi/2+d/R; return scx+R+cos(a)*R,scy+sch-R+sin(a)*R end; d=d-cArc
+                        if d<sideLen then return scx,scy+sch-R-d end; d=d-sideLen
+                        local a=pi+d/R; return scx+R+cos(a)*R,scy+R+sin(a)*R
+                    end
                     sloop(function()
+                        if not mOver(scx,scy,scw,sch) then
+                            for _,l in ipairs(gl) do l.Visible=false end; return
+                        end
                         local mx2=Mouse.X; local my2=Mouse.Y
-                        local inSec=mOver(scx,scy,scw,sch)
-                        if not inSec then for _,l in ipairs(gl) do l.Visible=false end; return end
-                        local dL=mx2-scx; local dR=(scx+scw)-mx2
-                        local dT=my2-scy; local dB=(scy+sch)-my2
-                        local dMin=math.min(dL,dR,dT,dB)
-                        local maxD=60
-                        local a=math.max(0,(1-dMin/maxD)*0.55)
-                        -- top
-                        gl[1].From=Vector2.new(scx+8,scy); gl[1].To=Vector2.new(scx+scw-8,scy)
-                        gl[1].Color=C.mauve; gl[1].Transparency=a*(dT<maxD and 1 or 0.1); gl[1].Visible=true
-                        -- bottom
-                        gl[2].From=Vector2.new(scx+8,scy+sch); gl[2].To=Vector2.new(scx+scw-8,scy+sch)
-                        gl[2].Color=C.mauve; gl[2].Transparency=a*(dB<maxD and 1 or 0.1); gl[2].Visible=true
-                        -- left
-                        gl[3].From=Vector2.new(scx,scy+8); gl[3].To=Vector2.new(scx,scy+sch-8)
-                        gl[3].Color=C.mauve; gl[3].Transparency=a*(dL<maxD and 1 or 0.1); gl[3].Visible=true
-                        -- right
-                        gl[4].From=Vector2.new(scx+scw,scy+8); gl[4].To=Vector2.new(scx+scw,scy+sch-8)
-                        gl[4].Color=C.mauve; gl[4].Transparency=a*(dR<maxD and 1 or 0.1); gl[4].Visible=true
+                        local dL=math.abs(mx2-scx); local dR=math.abs(mx2-(scx+scw))
+                        local dT=math.abs(my2-scy); local dB=math.abs(my2-(scy+sch))
+                        local dist=math.min(dL,dR,dT,dB)
+                        local maxD=70
+                        if dist>maxD then for _,l in ipairs(gl) do l.Visible=false end; return end
+                        local baseA=(1-dist/maxD)*0.65
+                        local focusT
+                        if dist==dT then focusT=(math.clamp(mx2,scx+R,scx+scw-R)-scx-R)/perim
+                        elseif dist==dR then focusT=(topLen+cArc+math.clamp(my2,scy+R,scy+sch-R)-scy-R)/perim
+                        elseif dist==dB then focusT=(topLen+cArc+sideLen+cArc+(scx+scw-R-math.clamp(mx2,scx+R,scx+scw-R)))/perim
+                        else focusT=(topLen+cArc+sideLen+cArc+topLen+cArc+scy+sch-R-math.clamp(my2,scy+R,scy+sch-R))/perim end
+                        local spread=0.3
+                        for i=1,N do
+                            local t1=focusT+(-spread/2+(i-1)*(spread/N))
+                            local t2=t1+spread/N
+                            local x1,y1=pt(t1); local x2,y2=pt(t2)
+                            local frac=1-math.abs((i-0.5)/N-0.5)*2
+                            gl[i].From=Vector2.new(x1,y1); gl[i].To=Vector2.new(x2,y2)
+                            gl[i].Color=C.mauve; gl[i].Transparency=baseA*frac; gl[i].Visible=true
+                        end
                     end)
                 end
                 local iy=cy+34
@@ -646,9 +665,9 @@ function SyftLib:Open()
                                                     local newW=kbW(newLbl)
                                                     kbTxt.Text=newLbl; kbBrd.Color=C.brd
                                                     kbBg.Size=Vector2.new(newW,22); kbBrd.Size=Vector2.new(newW,22)
-                                                    kbBg.Position=Vector2.new(cx+colW2-PAD-newW,iy+4)
+                                                    kbBg.Position=Vector2.new(cx+colW2-PAD-newW,kbIY+4)
                                                     kbBrd.Position=kbBg.Position
-                                                    kbTxt.Position=Vector2.new(cx+colW2-PAD-newW+8,iy+7)
+                                                    kbTxt.Position=Vector2.new(cx+colW2-PAD-newW+8,kbIY+7)
                                                     if capIt.cb then capIt.cb(vk,kname2) end
                                                     h.kd[vk]=true
                                                 end
