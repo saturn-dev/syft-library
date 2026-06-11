@@ -186,12 +186,10 @@ function SyftLib:Open()
     end
 
     local secDs={}; local secDsPos={}; local secDsLine={}; local loops={}
-    local cpPartsAll={}
     lib.dragging=false
     local function clearSecs()
         for _,d in ipairs(secDs) do d:Remove() end; secDs={}; secDsPos={}; secDsLine={}
         for _,h in ipairs(loops) do h.dead=true end; loops={}
-        cpPartsAll={}
     end
     local function mk(t,p)
         local o=Drawing.new(t); for k,v in pairs(p) do o[k]=v end
@@ -262,14 +260,18 @@ function SyftLib:Open()
                         local dMin=math.min(dL,dR,dT,dB)
                         local maxD=60
                         local a=math.max(0,(1-dMin/maxD)*0.55)
+                        -- top
                         gl[1].From=Vector2.new(scx+8,scy); gl[1].To=Vector2.new(scx+scw-8,scy)
-                        gl[1].Color=C.mauve; gl[1].Transparency=1-(a*(dT<maxD and 1 or 0.1)); gl[1].Visible=a>0
+                        gl[1].Color=C.mauve; gl[1].Transparency=a*(dT<maxD and 1 or 0.1); gl[1].Visible=true
+                        -- bottom
                         gl[2].From=Vector2.new(scx+8,scy+sch); gl[2].To=Vector2.new(scx+scw-8,scy+sch)
-                        gl[2].Color=C.mauve; gl[2].Transparency=1-(a*(dB<maxD and 1 or 0.1)); gl[2].Visible=a>0
+                        gl[2].Color=C.mauve; gl[2].Transparency=a*(dB<maxD and 1 or 0.1); gl[2].Visible=true
+                        -- left
                         gl[3].From=Vector2.new(scx,scy+8); gl[3].To=Vector2.new(scx,scy+sch-8)
-                        gl[3].Color=C.mauve; gl[3].Transparency=1-(a*(dL<maxD and 1 or 0.1)); gl[3].Visible=a>0
+                        gl[3].Color=C.mauve; gl[3].Transparency=a*(dL<maxD and 1 or 0.1); gl[3].Visible=true
+                        -- right
                         gl[4].From=Vector2.new(scx+scw,scy+8); gl[4].To=Vector2.new(scx+scw,scy+sch-8)
-                        gl[4].Color=C.mauve; gl[4].Transparency=1-(a*(dR<maxD and 1 or 0.1)); gl[4].Visible=a>0
+                        gl[4].Color=C.mauve; gl[4].Transparency=a*(dR<maxD and 1 or 0.1); gl[4].Visible=true
                     end)
                 end
                 local iy=cy+34
@@ -494,11 +496,9 @@ function SyftLib:Open()
                             local cpX=math.clamp(cx+math.floor(colW2/2)-math.floor(cpW/2),lib.px+4,lib.px+lib.sw-cpW-4)
                             local cpY=iy+IH+2
                             local cpParts={}
-                            local cpPartsSet={}
                             local function cpMk(t,p)
                                 local o=Drawing.new(t); for k,v in pairs(p) do o[k]=v end
                                 table.insert(cpParts,o); table.insert(secDs,o); table.insert(drawings,o)
-                                cpPartsSet[o]=true; cpPartsAll[o]=true
                                 if t=="Line" then table.insert(secDsLine,o) else table.insert(secDsPos,o) end
                                 return o
                             end
@@ -646,9 +646,9 @@ function SyftLib:Open()
                                                     local newW=kbW(newLbl)
                                                     kbTxt.Text=newLbl; kbBrd.Color=C.brd
                                                     kbBg.Size=Vector2.new(newW,22); kbBrd.Size=Vector2.new(newW,22)
-                                                    kbBg.Position=Vector2.new(cx+colW2-PAD-newW,kbIY+4)
+                                                    kbBg.Position=Vector2.new(cx+colW2-PAD-newW,iy+4)
                                                     kbBrd.Position=kbBg.Position
-                                                    kbTxt.Position=Vector2.new(cx+colW2-PAD-newW+8,kbIY+7)
+                                                    kbTxt.Position=Vector2.new(cx+colW2-PAD-newW+8,iy+7)
                                                     if capIt.cb then capIt.cb(vk,kname2) end
                                                     h.kd[vk]=true
                                                 end
@@ -824,14 +824,17 @@ function SyftLib:Open()
             if down and not toggleKeyPrev then
                 lib.visible=not lib.visible
                 local v=lib.visible
-                if not v then openDD=nil end
                 winBg.Visible=v; winBrd.Visible=v; topBg.Visible=v; topFill.Visible=v
                 topBrd.Visible=v; titTxt.Visible=v; slideLine.Visible=v
                 if srBg then srBg.Visible=v; srBrd.Visible=v; srIcon.Visible=v; srIconL.Visible=v; srTxt.Visible=v end
                 for _,td in ipairs(tabDs) do td.td.Visible=v end
-                -- show: restore secDs visibility. hide: hide secDs. No rebuild.
-                for _,d2 in ipairs(secDs) do if not cpPartsAll[d2] then d2.Visible=v end end
-                if v and #secDs==0 then rebuildChrome(); buildSecs() end
+                -- show: rebuild cleanly. hide: hide all secDs.
+                if v then
+                    if #secDs==0 then rebuildChrome() end
+                    buildSecs()
+                else
+                    for _,d2 in ipairs(secDs) do d2.Visible=false end
+                end
             end
             toggleKeyPrev=down
         end
