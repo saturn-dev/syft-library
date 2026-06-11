@@ -500,6 +500,7 @@ function SyftLib:Open()
                                 local o=Drawing.new(t); for k,v in pairs(p) do o[k]=v end
                                 table.insert(cpParts,o); table.insert(secDs,o); table.insert(drawings,o)
                                 if t=="Line" then table.insert(secDsLine,o) else table.insert(secDsPos,o) end
+                                o._isCpPart=true
                                 return o
                             end
                             local cpBg=cpMk("Square",{Filled=true,Color=C.crust,Size=Vector2.new(cpW,cpH),Position=Vector2.new(cpX,cpY),Corner=8,ZIndex=30,Visible=false})
@@ -646,9 +647,9 @@ function SyftLib:Open()
                                                     local newW=kbW(newLbl)
                                                     kbTxt.Text=newLbl; kbBrd.Color=C.brd
                                                     kbBg.Size=Vector2.new(newW,22); kbBrd.Size=Vector2.new(newW,22)
-                                                    kbBg.Position=Vector2.new(cx+colW2-PAD-newW,iy+4)
+                                                    kbBg.Position=Vector2.new(cx+colW2-PAD-newW,kbIY+4)
                                                     kbBrd.Position=kbBg.Position
-                                                    kbTxt.Position=Vector2.new(cx+colW2-PAD-newW+8,iy+7)
+                                                    kbTxt.Position=Vector2.new(cx+colW2-PAD-newW+8,kbIY+7)
                                                     if capIt.cb then capIt.cb(vk,kname2) end
                                                     h.kd[vk]=true
                                                 end
@@ -824,12 +825,13 @@ function SyftLib:Open()
             if down and not toggleKeyPrev then
                 lib.visible=not lib.visible
                 local v=lib.visible
+                if not v then openDD=nil end
                 winBg.Visible=v; winBrd.Visible=v; topBg.Visible=v; topFill.Visible=v
                 topBrd.Visible=v; titTxt.Visible=v; slideLine.Visible=v
                 if srBg then srBg.Visible=v; srBrd.Visible=v; srIcon.Visible=v; srIconL.Visible=v; srTxt.Visible=v end
                 for _,td in ipairs(tabDs) do td.td.Visible=v end
                 -- show: restore secDs visibility. hide: hide secDs. No rebuild.
-                for _,d2 in ipairs(secDs) do d2.Visible=v end
+                for _,d2 in ipairs(secDs) do if not d2._isCpPart then d2.Visible=v end end
                 if v and #secDs==0 then rebuildChrome(); buildSecs() end
             end
             toggleKeyPrev=down
