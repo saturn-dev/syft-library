@@ -138,7 +138,6 @@ function SyftLib:Open()
     if lib.doSearch then
         local sx=lib.px+tw(lib.title,FS)+26
         srBg  =D("Square",{Filled=true,Color=C.surface0,Size=Vector2.new(srW,22),Position=Vector2.new(sx,lib.py+8),Corner=6,ZIndex=7,Visible=true})
-        srBrd =D("Square",{Filled=false,Color=C.brd,Size=Vector2.new(srW,22),Position=Vector2.new(sx,lib.py+8),Corner=6,Thickness=1,ZIndex=8,Visible=true})
         srIcon=D("Circle",{Radius=4,NumSides=10,Thickness=1.2,Color=C.overlay0,Filled=false,Position=Vector2.new(sx+10,lib.py+19),ZIndex=9,Visible=true})
         srIconL=D("Line",{From=Vector2.new(sx+13,lib.py+22),To=Vector2.new(sx+16,lib.py+25),Thickness=1.2,Color=C.overlay0,ZIndex=9,Visible=true})
         srTxt =D("Text",{Text="search...",Size=FSX,Color=C.overlay0,Font=FONT,Position=Vector2.new(sx+20,lib.py+12),ZIndex=9,Visible=true})
@@ -173,9 +172,8 @@ function SyftLib:Open()
         slideLine.Color=C.acc; slideLine.Position=Vector2.new(lib.px+TITLEW+slideRelXCur,lib.py+TB-3); slideLine.Size=Vector2.new(eTW-16,2)
         if srBg then
             local sx2=lib.px+tw(lib.title,FS)+26
-            srBg.Position=Vector2.new(sx2,lib.py+8); srBrd.Position=srBg.Position
-            srBg.Color=C.surface0; srBrd.Color=C.brd
-            srIcon.Position=Vector2.new(sx2+10,lib.py+19); srIcon.Color=C.overlay0
+            srBg.Position=Vector2.new(sx2,lib.py+8); srBg.Color=C.surface0
+                        srIcon.Position=Vector2.new(sx2+10,lib.py+19); srIcon.Color=C.overlay0
             srIconL.From=Vector2.new(sx2+13,lib.py+22); srIconL.To=Vector2.new(sx2+16,lib.py+25); srIconL.Color=C.overlay0
             srTxt.Position=Vector2.new(sx2+20,lib.py+12); srTxt.Color=C.overlay0
         end
@@ -405,7 +403,7 @@ function SyftLib:Open()
                             local bBg=mk("Square",{Filled=true,Color=lC(C.surface0,C.surface2,it._hc),Size=Vector2.new(bW,BH),Position=Vector2.new(cx+PAD,iy),Corner=6,ZIndex=13,Visible=true})
                             local bBrd=mk("Square",{Filled=false,Color=lC(C.brd,C.mauve,it._hc),Size=Vector2.new(bW,BH),Position=Vector2.new(cx+PAD,iy),Corner=6,Thickness=1,ZIndex=14,Visible=true})
                             local lw=tw(it.label,FSS)
-                            local btx=cx+PAD+math.floor((bW-lw)/2)+12
+                            local btx=cx+PAD+math.floor((bW-lw)/2)+15
                             local bty=iy+math.floor((BH/2)-7)
                             local bTxt=mk("Text",{Text=it.label,Size=FSS,Color=lC(C.subtext1,C.text,it._hc),Font=FONT,Position=Vector2.new(btx,bty),ZIndex=15,Visible=true})
                             if inV then
@@ -778,8 +776,7 @@ function SyftLib:Open()
                 wait(0.016)
                 if lib.visible then
                     local sx2=lib.px+tw(lib.title,FS)+26
-                    srBg.Position=Vector2.new(sx2,lib.py+8); srBrd.Position=srBg.Position
-                    srIcon.Position=Vector2.new(sx2+10,lib.py+19)
+                    srBg.Position=Vector2.new(sx2,lib.py+8); srIcon.Position=Vector2.new(sx2+10,lib.py+19)
                     srIconL.From=Vector2.new(sx2+13,lib.py+22); srIconL.To=Vector2.new(sx2+16,lib.py+25)
                     srTxt.Position=Vector2.new(sx2+20,lib.py+12)
                     local d=ismouse1pressed()
@@ -845,7 +842,7 @@ function SyftLib:Open()
                 local v=lib.visible
                 winBg.Visible=v; winBrd.Visible=v; topBg.Visible=v; topFill.Visible=v
                 topBrd.Visible=v; titTxt.Visible=v; slideLine.Visible=v
-                if srBg then srBg.Visible=v; srBrd.Visible=v; srIcon.Visible=v; srIconL.Visible=v; srTxt.Visible=v end
+                if srBg then srBg.Visible=v; srIcon.Visible=v; srIconL.Visible=v; srTxt.Visible=v end
                 for _,td in ipairs(tabDs) do td.td.Visible=v end
                 -- show: rebuild cleanly. hide: hide all secDs.
                 if v then
