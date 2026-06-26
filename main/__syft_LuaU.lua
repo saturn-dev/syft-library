@@ -437,7 +437,7 @@ function SyftLib:Open()
                             local trkX=cx+PAD; local trkW=colW2-PAD*2
                             local pct=(it.val-it.min)/math.max(1,it.max-it.min)
                             local fw=math.max(8,math.floor(trkW*pct))
-                            if it._tx==nil then it._tx=trkX+fw-8 end
+                            it._tx=trkX+fw-8
                             local capIt=it
                             mk("Text",{Text=it.label,Size=FSS,Color=C.subtext1,Font=FONT,Position=Vector2.new(trkX,iy+4),ZIndex=13,Visible=true})
                             local vs=math.floor(it.val).." "..it.sfx
@@ -763,6 +763,14 @@ function SyftLib:Open()
         end
 
         lib._secBgRefs=secBgRefs
+        local secItemRefs={}
+        for _,d in ipairs(secDsPos) do
+            table.insert(secItemRefs,{kind="pos",d=d,startX=d.Position.X})
+        end
+        for _,d in ipairs(secDsLine) do
+            table.insert(secItemRefs,{kind="line",d=d,startX=d.From.X})
+        end
+        lib._secItemRefs=secItemRefs
         if totH>cH then
             local sbH=math.max(24,math.floor(cH*(cH/math.max(1,totH))))
             local sbY=lib.py+TB+CP+math.floor((sY/math.max(1,maxS))*math.max(0,cH-sbH))
@@ -898,6 +906,32 @@ function SyftLib:Open()
                         -- live-update section bg widths so they scale with window
                         local newColW=math.floor((lib.sw-CP*3)/2)
                         local newCX1=lib.px+CP; local newCX2=lib.px+CP*2+newColW
+                        local oldColW=math.floor((lib.sw-CP*3)/2)-math.floor((nw-lib.sw)/2)
+                        if oldColW~=newColW and lib._secItemRefs then
+                            local wRatio=newColW/math.max(1,oldColW)
+                            local midX=lib.px+lib.sw/2
+                            for _,ref in ipairs(lib._secItemRefs) do
+                                local isLeft=ref.startX<midX
+                                local relX=ref.startX-(isLeft and lib.px+CP or lib.px+CP*2+oldColW)
+                                local newCXbase=isLeft and newCX1 or newCX2
+                                local newX=newCXbase+relX
+                                if ref.kind=="pos" then
+                                    local d=ref.d
+                                    local oldW=d.Size.X
+                                    local newW=math.floor(oldW*wRatio)
+                                    d.Position=Vector2.new(newX,d.Position.Y)
+                                    if oldW>8 then d.Size=Vector2.new(newW,d.Size.Y) end
+                                elseif ref.kind=="line" then
+                                    local d=ref.d
+                                    local isLeft2=ref.startX<midX
+                                    local newCXb=isLeft2 and newCX1 or newCX2
+                                    local fX=d.From.X-(isLeft2 and lib.px+CP or lib.px+CP*2+oldColW)
+                                    local tX=d.To.X-(isLeft2 and lib.px+CP or lib.px+CP*2+oldColW)
+                                    d.From=Vector2.new(newCXb+fX,d.From.Y)
+                                    d.To=Vector2.new(newCXb+tX,d.To.Y)
+                                end
+                            end
+                        end
                         if lib._secBgRefs then
                             for _,ref in ipairs(lib._secBgRefs) do
                                 local newCX=ref.L.isLeft and newCX1 or newCX2
