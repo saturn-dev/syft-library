@@ -76,8 +76,63 @@ function SyftLib.new(title)
     return self
 end
 function SyftLib:Search() self.doSearch=true end
-function SyftLib:SetTheme(name) end
-function SyftLib:GetThemeNames() return {"Default"} end
+local THEMES={
+    Default={
+        base=Color3.fromRGB(24,24,37),mantle=Color3.fromRGB(18,18,28),crust=Color3.fromRGB(14,14,22),
+        surface0=Color3.fromRGB(36,36,54),surface1=Color3.fromRGB(44,44,66),surface2=Color3.fromRGB(54,54,80),
+        overlay0=Color3.fromRGB(108,108,138),overlay1=Color3.fromRGB(127,127,159),
+        text=Color3.fromRGB(205,214,244),subtext1=Color3.fromRGB(166,173,200),subtext0=Color3.fromRGB(147,153,178),
+        mauve=Color3.fromRGB(203,166,247),lavender=Color3.fromRGB(180,190,254),
+    },
+    Midnight={
+        base=Color3.fromRGB(10,10,18),mantle=Color3.fromRGB(7,7,13),crust=Color3.fromRGB(5,5,9),
+        surface0=Color3.fromRGB(20,20,35),surface1=Color3.fromRGB(28,28,48),surface2=Color3.fromRGB(38,38,62),
+        overlay0=Color3.fromRGB(90,90,130),overlay1=Color3.fromRGB(110,110,155),
+        text=Color3.fromRGB(220,220,255),subtext1=Color3.fromRGB(160,160,210),subtext0=Color3.fromRGB(130,130,180),
+        mauve=Color3.fromRGB(150,120,255),lavender=Color3.fromRGB(130,160,255),
+    },
+    Nord={
+        base=Color3.fromRGB(36,40,49),mantle=Color3.fromRGB(30,34,42),crust=Color3.fromRGB(24,28,34),
+        surface0=Color3.fromRGB(46,52,64),surface1=Color3.fromRGB(59,66,82),surface2=Color3.fromRGB(67,76,94),
+        overlay0=Color3.fromRGB(96,106,128),overlay1=Color3.fromRGB(111,121,145),
+        text=Color3.fromRGB(236,239,244),subtext1=Color3.fromRGB(194,197,204),subtext0=Color3.fromRGB(166,170,178),
+        mauve=Color3.fromRGB(136,192,208),lavender=Color3.fromRGB(129,161,193),
+    },
+    Ember={
+        base=Color3.fromRGB(20,14,12),mantle=Color3.fromRGB(15,10,8),crust=Color3.fromRGB(10,7,5),
+        surface0=Color3.fromRGB(38,26,22),surface1=Color3.fromRGB(52,35,28),surface2=Color3.fromRGB(68,46,36),
+        overlay0=Color3.fromRGB(130,95,75),overlay1=Color3.fromRGB(155,115,90),
+        text=Color3.fromRGB(245,230,215),subtext1=Color3.fromRGB(200,175,155),subtext0=Color3.fromRGB(170,145,125),
+        mauve=Color3.fromRGB(255,140,80),lavender=Color3.fromRGB(255,180,100),
+    },
+    Jade={
+        base=Color3.fromRGB(12,20,18),mantle=Color3.fromRGB(8,15,13),crust=Color3.fromRGB(5,10,9),
+        surface0=Color3.fromRGB(20,36,32),surface1=Color3.fromRGB(28,50,44),surface2=Color3.fromRGB(38,66,58),
+        overlay0=Color3.fromRGB(80,130,115),overlay1=Color3.fromRGB(100,155,138),
+        text=Color3.fromRGB(215,240,232),subtext1=Color3.fromRGB(160,200,185),subtext0=Color3.fromRGB(130,170,155),
+        mauve=Color3.fromRGB(80,210,160),lavender=Color3.fromRGB(100,230,190),
+    },
+    Rose={
+        base=Color3.fromRGB(22,12,18),mantle=Color3.fromRGB(16,8,13),crust=Color3.fromRGB(11,5,9),
+        surface0=Color3.fromRGB(40,22,33),surface1=Color3.fromRGB(55,30,45),surface2=Color3.fromRGB(72,40,58),
+        overlay0=Color3.fromRGB(135,85,115),overlay1=Color3.fromRGB(160,105,138),
+        text=Color3.fromRGB(245,220,235),subtext1=Color3.fromRGB(200,165,185),subtext0=Color3.fromRGB(170,135,155),
+        mauve=Color3.fromRGB(255,120,170),lavender=Color3.fromRGB(255,160,200),
+    },
+}
+local function applyTheme(name)
+    local t=THEMES[name] or THEMES.Default
+    C.base=t.base; C.mantle=t.mantle; C.crust=t.crust
+    C.surface0=t.surface0; C.surface1=t.surface1; C.surface2=t.surface2
+    C.overlay0=t.overlay0; C.overlay1=t.overlay1
+    C.text=t.text; C.subtext1=t.subtext1; C.subtext0=t.subtext0
+    C.mauve=t.mauve; C.lavender=t.lavender
+    C.acc=C.mauve; C.brd=C.surface1; C.brd2=C.surface2
+end
+function SyftLib:SetTheme(name) applyTheme(name) end
+function SyftLib:GetThemeNames()
+    local n={}; for k in pairs(THEMES) do table.insert(n,k) end; table.sort(n); return n
+end
 
 function SyftLib:Tab(name)
     local tab={name=name,sections={}}
@@ -223,10 +278,14 @@ function SyftLib:Open()
             if secVis(sec,q) then
                 local ch=secH(sec,q)
                 if ch>0 then
-                    li=li+1; local isLeft=(li%2==1)
-                    local rawY=isLeft and c1H or c2H; local cx=isLeft and cx1 or cx2
-                    table.insert(layouts,{sec=sec,cx=cx,rawY=rawY,colW=colW,ch=ch})
-                    if isLeft then c1H=c1H+ch+CP else c2H=c2H+ch+CP end
+                    if ch>cH then
+                        warn("[SyftLib] section '"..sec.title.."' is taller than the UI window ("..math.floor(ch).."px > "..math.floor(cH).."px). add fewer items or increase UI height.")
+                    else
+                        li=li+1; local isLeft=(li%2==1)
+                        local rawY=isLeft and c1H or c2H; local cx=isLeft and cx1 or cx2
+                        table.insert(layouts,{sec=sec,cx=cx,rawY=rawY,colW=colW,ch=ch})
+                        if isLeft then c1H=c1H+ch+CP else c2H=c2H+ch+CP end
+                    end
                 end
             end
         end
@@ -696,6 +755,23 @@ function SyftLib:Open()
 
     buildSecs()
 
+    -- RESIZE GRIP drawings (3 diagonal lines at bottom-right corner)
+    local MIN_SW=660; local MIN_SH=500
+    local rgLines={}
+    for i=1,3 do
+        local l=D("Line",{}); l.Color=C.surface2; l.Thickness=1.2; l.ZIndex=20; l.Visible=true
+        table.insert(rgLines,l)
+    end
+    local function updateRGrip()
+        local rx=lib.px+lib.sw; local ry=lib.py+lib.sh
+        local offsets={6,11,16}
+        for i,o in ipairs(offsets) do
+            rgLines[i].From=Vector2.new(rx-o,ry-2)
+            rgLines[i].To=Vector2.new(rx-2,ry-o)
+        end
+    end
+    updateRGrip()
+
     -- TAB loop
     spawn(function()
         local wd=false
@@ -765,6 +841,45 @@ function SyftLib:Open()
                 end
                 wd=d
             else wd=false; drag=false; lib.dragging=false end
+        end
+    end)
+
+    -- RESIZE loop
+    spawn(function()
+        local wd=false; local resizing=false; local startMX=0; local startMY=0; local startSW=0; local startSH=0
+        while true do
+            wait(0.016)
+            if lib.visible then
+                local d=ismouse1pressed()
+                local mx=Mouse.X; local my=Mouse.Y
+                -- grip zone: 20x20 at bottom-right
+                local gripX=lib.px+lib.sw-20; local gripY=lib.py+lib.sh-20
+                if d and not wd and mOver(gripX,gripY,20,20) then
+                    resizing=true; startMX=mx; startMY=my; startSW=lib.sw; startSH=lib.sh
+                end
+                if resizing and d then
+                    local nw=math.max(MIN_SW,startSW+(mx-startMX))
+                    local nh=math.max(MIN_SH,startSH+(my-startMY))
+                    if nw~=lib.sw or nh~=lib.sh then
+                        lib.sw=nw; lib.sh=nh
+                        cH=lib.sh-TB-CP*2
+                        rebuildChrome()
+                        buildSecs()
+                        updateRGrip()
+                    end
+                end
+                if not d then
+                    if resizing then resizing=false end
+                    -- update grip color on hover
+                    local gripX2=lib.px+lib.sw-20; local gripY2=lib.py+lib.sh-20
+                    local hov=mOver(gripX2,gripY2,20,20)
+                    for _,l in ipairs(rgLines) do l.Color=hov and C.mauve or C.surface2 end
+                end
+                updateRGrip()
+                if not lib.visible then for _,l in ipairs(rgLines) do l.Visible=false end
+                else for _,l in ipairs(rgLines) do l.Visible=true end end
+                wd=d
+            else wd=false end
         end
     end)
 
