@@ -201,7 +201,7 @@ function SyftLib:Open()
         srTxt =D("Text",{Text="search...",Size=FSX,Color=C.overlay0,Font=FONT,Position=Vector2.new(sx+20,lib.py+12),ZIndex=9,Visible=true})
     end
 
-    local MAX_TAB_W=120  -- max width per tab
+    local MAX_TAB_W=160  -- max width per tab
     local FIXED_LEFT=tw(lib.title,FS)+26+(lib.doSearch and srW+14 or 0)
     local numT=#lib.tnames
     -- TITLEW and eTW are recomputed dynamically so tabs right-align as window grows
@@ -263,14 +263,13 @@ function SyftLib:Open()
         if t=="Line" then table.insert(secDsLine,o) else table.insert(secDsPos,o) end
         return o
     end
+    local HBsvc=game:GetService("RunService").Heartbeat
     local function sloop(fn)
         local h={dead=false,wd=false,drag=false,kd={},dH=false,dS=false}
         table.insert(loops,h)
-        spawn(function()
-            while not h.dead do
-                if lib.visible and not lib.dragging then fn(h) end
-                wait()
-            end
+        local conn; conn=HBsvc:Connect(function()
+            if h.dead then conn:Disconnect(); return end
+            if lib.visible and not lib.dragging then fn(h) end
         end)
         return h
     end
@@ -321,9 +320,9 @@ function SyftLib:Open()
                 -- perimeter glow: 24 short segments following rounded rect border
                 do
                     local scx=cx; local scy=cy; local scw=colW2; local sch=ch; local R=8
-                    local N=32
+                    local N=20
                     local gl={}
-                    for _=1,N do local l=mk("Line",{}); l.Thickness=2; l.ZIndex=9; l.Visible=false; gl[#gl+1]=l end
+                    for _=1,N do local l=mk("Line",{}); l.Thickness=2.5; l.ZIndex=9; l.Visible=false; gl[#gl+1]=l end
                     local sin=math.sin; local cos=math.cos; local pi=math.pi
                     local topLen=scw-2*R; local sideLen=sch-2*R; local cArc=0.5*pi*R
                     local perim=2*(topLen+sideLen)+4*cArc
@@ -338,31 +337,37 @@ function SyftLib:Open()
                         if d<sideLen then return scx,scy+sch-R-d end; d=d-sideLen
                         local a=pi+d/R; return scx+R+cos(a)*R,scy+R+sin(a)*R
                     end
+                    local glAlpha=0; local lastFocusT=0
                     sloop(function()
-                        if not mOver(scx,scy,scw,sch) then
-                            for _,l in ipairs(gl) do l.Visible=false end; return
+                        local inSec=mOver(scx,scy,scw,sch)
+                        if inSec then
+                            local mx2=Mouse.X; local my2=Mouse.Y
+                            local dL=math.abs(mx2-scx); local dR=math.abs(mx2-(scx+scw))
+                            local dT=math.abs(my2-scy); local dB=math.abs(my2-(scy+sch))
+                            local dist=math.min(dL,dR,dT,dB)
+                            local targetA=dist<=70 and (1-dist/70)*0.72 or 0
+                            glAlpha=glAlpha+(targetA-glAlpha)*0.14
+                            if dist<=70 then
+                                if dist==dT then lastFocusT=(math.clamp(mx2,scx+R,scx+scw-R)-scx-R)/perim
+                                elseif dist==dR then lastFocusT=(topLen+cArc+math.clamp(my2,scy+R,scy+sch-R)-scy-R)/perim
+                                elseif dist==dB then lastFocusT=(topLen+cArc+sideLen+cArc+(scx+scw-R-math.clamp(mx2,scx+R,scx+scw-R)))/perim
+                                else lastFocusT=(topLen+cArc+sideLen+cArc+topLen+cArc+scy+sch-R-math.clamp(my2,scy+R,scy+sch-R))/perim end
+                            end
+                        else
+                            glAlpha=glAlpha*0.82
                         end
-                        local mx2=Mouse.X; local my2=Mouse.Y
-                        local dL=math.abs(mx2-scx); local dR=math.abs(mx2-(scx+scw))
-                        local dT=math.abs(my2-scy); local dB=math.abs(my2-(scy+sch))
-                        local dist=math.min(dL,dR,dT,dB)
-                        local maxD=70
-                        if dist>maxD then for _,l in ipairs(gl) do l.Visible=false end; return end
-                        local baseA=(1-dist/maxD)*0.65
-                        local focusT
-                        if dist==dT then focusT=(math.clamp(mx2,scx+R,scx+scw-R)-scx-R)/perim
-                        elseif dist==dR then focusT=(topLen+cArc+math.clamp(my2,scy+R,scy+sch-R)-scy-R)/perim
-                        elseif dist==dB then focusT=(topLen+cArc+sideLen+cArc+(scx+scw-R-math.clamp(mx2,scx+R,scx+scw-R)))/perim
-                        else focusT=(topLen+cArc+sideLen+cArc+topLen+cArc+scy+sch-R-math.clamp(my2,scy+R,scy+sch-R))/perim end
-                        local spread=0.45
-                        local pulse=0.88+0.12*math.sin(tick()*3)
-                        for i=1,N do
-                            local t1=focusT+(-spread/2+(i-1)*(spread/N))
-                            local t2=t1+spread/N
-                            local x1,y1=pt(t1); local x2,y2=pt(t2)
-                            local frac=(1-math.abs((i-0.5)/N-0.5)*2)^0.7
-                            gl[i].From=Vector2.new(x1,y1); gl[i].To=Vector2.new(x2,y2)
-                            gl[i].Color=C.mauve; gl[i].Transparency=baseA*frac*pulse; gl[i].Visible=true
+                        if glAlpha<0.008 then
+                            for _,l in ipairs(gl) do l.Visible=false end
+                        else
+                            for i=1,N do
+                                local t1=lastFocusT+(-0.38/2+(i-1)*(0.38/N))
+                                local t2=t1+0.38/N
+                                local x1,y1=pt(t1); local x2,y2=pt(t2)
+                                local norm=(i-0.5)/N
+                                local frac=math.exp(-7*(norm-0.5)^2)
+                                gl[i].From=Vector2.new(x1,y1); gl[i].To=Vector2.new(x2,y2)
+                                gl[i].Color=C.mauve; gl[i].Transparency=glAlpha*frac; gl[i].Visible=true
+                            end
                         end
                     end)
                 end
@@ -585,8 +590,8 @@ function SyftLib:Open()
                             local swBg=mk("Square",{Filled=true,Color=it.col,Size=Vector2.new(24,18),Position=Vector2.new(swX,swY),Corner=5,ZIndex=13,Visible=true})
                             local swBrd=mk("Square",{Filled=false,Color=C.brd2,Size=Vector2.new(24,18),Position=Vector2.new(swX,swY),Corner=5,Thickness=1,ZIndex=14,Visible=true})
                             local cpW=200; local cpH=192
-                            local cpX=math.clamp(cx+math.floor(colW2/2)-math.floor(cpW/2),lib.px+4,lib.px+lib.sw-cpW-4)
-                            local cpY=iy+IH+2
+                            local cpX=math.clamp(swX+24-cpW,lib.px+4,lib.px+lib.sw-cpW-4)
+                            local cpY=swY+22
                             local cpParts={}
                             local function cpMk(t,p)
                                 local o=Drawing.new(t); for k,v in pairs(p) do o[k]=v end
@@ -714,7 +719,7 @@ function SyftLib:Open()
                             local kbBg=mk("Square",{Filled=true,Color=C.surface0,Size=Vector2.new(curW,22),Position=Vector2.new(cx+colW2-PAD-curW,kbIY+4),Corner=5,ZIndex=13,Visible=true})
                             local kbBrd=mk("Square",{Filled=false,Color=C.brd,Size=Vector2.new(curW,22),Position=Vector2.new(cx+colW2-PAD-curW,kbIY+4),Corner=5,Thickness=1,ZIndex=14,Visible=true})
                             mk("Text",{Text=it.label,Size=FSS,Color=C.subtext1,Font=FONT,Position=Vector2.new(cx+PAD,kbIY+6),ZIndex=13,Visible=true})
-                            local kbTxt=mk("Text",{Text=initLbl,Size=FSX,Color=C.mauve,Font=FONTB,Position=Vector2.new(cx+colW2-PAD-curW+8,kbIY+7),ZIndex=15,Visible=true})
+                            local kbTxt=mk("Text",{Text=initLbl,Size=FSX,Color=C.mauve,Font=FONTB,Position=Vector2.new(cx+colW2-PAD-curW+math.floor((curW-tw(initLbl,FSX))/2),kbIY+7),ZIndex=15,Visible=true})
                             if inV then
                                 sloop(function(h)
                                     local d=ismouse1pressed()
@@ -740,7 +745,7 @@ function SyftLib:Open()
                                                     kbBg.Size=Vector2.new(newW,22); kbBrd.Size=Vector2.new(newW,22)
                                                     kbBg.Position=Vector2.new(cx+colW2-PAD-newW,kbIY+4)
                                                     kbBrd.Position=kbBg.Position
-                                                    kbTxt.Position=Vector2.new(cx+colW2-PAD-newW+8,kbIY+7)
+                                                    kbTxt.Position=Vector2.new(cx+colW2-PAD-newW+math.floor((newW-tw(newLbl,FSX))/2),kbIY+7)
                                                     if capIt.cb then capIt.cb(vk,kname2) end
                                                     h.kd[vk]=true
                                                 end
@@ -957,7 +962,7 @@ function SyftLib:Open()
                     if lib.query~=lastQ then lastQ=lib.query; buildSecs() end
                     wd=d
                 else wd=false end
-            end
+            endhttps://github.com/saturn-dev/syft-library/blob/main/main/__syft_LuaU.lua
         end)
     end
 
@@ -987,50 +992,23 @@ function SyftLib:Open()
 
     -- TOGGLE KEY + TWEEN: fade in/out on show/hide
     local toggleKeyPrev=false
-    lib._tweenAlpha=lib.visible and 1 or 0
-    lib._tweenTarget=lib.visible and 1 or 0
-    local RS=game:GetService("RunService")
-    RS.RenderStepped:Connect(function()
-        -- smooth alpha tween
-        local dt=0.016
-        if lib._tweenAlpha~=lib._tweenTarget then
-            local spd=10
-            lib._tweenAlpha=lib._tweenAlpha+(lib._tweenTarget-lib._tweenAlpha)*(1-math.exp(-spd*dt))
-            if math.abs(lib._tweenAlpha-lib._tweenTarget)<0.01 then lib._tweenAlpha=lib._tweenTarget end
-            local a=lib._tweenAlpha
-            -- fade chrome drawings
-            winBg.Transparency=1-a; winBrd.Transparency=1-a
-            topBg.Transparency=1-a; topFill.Transparency=1-a; topBrd.Transparency=1-a
-            titTxt.Transparency=1-a; slideLine.Transparency=1-a
-            if srBg then srBg.Transparency=1-a; srIcon.Transparency=1-a; srIconL.Transparency=1-a; srTxt.Transparency=1-a end
-            for _,td in ipairs(tabDs) do td.td.Transparency=1-a end
-            for _,d2 in ipairs(secDs) do d2.Transparency=1-a end
-            for _,l in ipairs(rgLines) do l.Transparency=1-a end
-        end
-        -- toggle key
+    local RS2=game:GetService("RunService")
+    RS2.RenderStepped:Connect(function()
         if lib.toggleKey~=0 then
             local down=iskeypressed(lib.toggleKey)
             if down and not toggleKeyPrev then
                 lib.visible=not lib.visible
-                lib._tweenTarget=lib.visible and 1 or 0
-                if lib.visible then
-                    -- make visible immediately, fade in via alpha
-                    winBg.Visible=true; winBrd.Visible=true; topBg.Visible=true; topFill.Visible=true
-                    topBrd.Visible=true; titTxt.Visible=true; slideLine.Visible=true
-                    if srBg then srBg.Visible=true; srIcon.Visible=true; srIconL.Visible=true; srTxt.Visible=true end
-                    for _,td in ipairs(tabDs) do td.td.Visible=true end
+                local v=lib.visible
+                winBg.Visible=v; winBrd.Visible=v; topBg.Visible=v; topFill.Visible=v
+                topBrd.Visible=v; titTxt.Visible=v; slideLine.Visible=v
+                if srBg then srBg.Visible=v; srIcon.Visible=v; srIconL.Visible=v; srTxt.Visible=v end
+                if srCaret then srCaret.Visible=false end
+                for _,td in ipairs(tabDs) do td.td.Visible=v end
+                if v then
                     if #secDs==0 then rebuildChrome() end
                     buildSecs()
                 else
-                    -- hide after tween completes -- handled by alpha reaching 0
-                    spawn(function()
-                        while lib._tweenAlpha>0.01 do wait(0.016) end
-                        winBg.Visible=false; winBrd.Visible=false; topBg.Visible=false; topFill.Visible=false
-                        topBrd.Visible=false; titTxt.Visible=false; slideLine.Visible=false
-                        if srBg then srBg.Visible=false; srIcon.Visible=false; srIconL.Visible=false; srTxt.Visible=false end
-                        for _,td in ipairs(tabDs) do td.td.Visible=false end
-                        for _,d2 in ipairs(secDs) do d2.Visible=false end
-                    end)
+                    for _,d2 in ipairs(secDs) do d2.Visible=false end
                 end
             end
             toggleKeyPrev=down
