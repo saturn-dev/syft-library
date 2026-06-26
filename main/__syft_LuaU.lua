@@ -763,14 +763,26 @@ function SyftLib:Open()
         end
 
         lib._secBgRefs=secBgRefs
+        local builtColW=math.floor((lib.sw-CP*3)/2)
+        local builtCX1=lib.px+CP; local builtCX2=lib.px+CP*2+builtColW
         local secItemRefs={}
         for _,d in ipairs(secDsPos) do
-            table.insert(secItemRefs,{kind="pos",d=d,startX=d.Position.X})
+            local ax=d.Position.X
+            local isLeft=(ax<lib.px+lib.sw/2)
+            local base=isLeft and builtCX1 or builtCX2
+            local relX=ax-base
+            local wFrac=d.Size.X/math.max(1,builtColW)
+            table.insert(secItemRefs,{kind="pos",d=d,isLeft=isLeft,relX=relX,wFrac=wFrac,absW=(d.Size.X<=8)})
         end
         for _,d in ipairs(secDsLine) do
-            table.insert(secItemRefs,{kind="line",d=d,startX=d.From.X})
+            local ax=d.From.X
+            local isLeft=(ax<lib.px+lib.sw/2)
+            local base=isLeft and builtCX1 or builtCX2
+            local relFX=d.From.X-base; local relTX=d.To.X-base
+            table.insert(secItemRefs,{kind="line",d=d,isLeft=isLeft,relFX=relFX,relTX=relTX})
         end
         lib._secItemRefs=secItemRefs
+        lib._builtCX1=builtCX1; lib._builtCX2=builtCX2; lib._builtColW=builtColW
         if totH>cH then
             local sbH=math.max(24,math.floor(cH*(cH/math.max(1,totH))))
             local sbY=lib.py+TB+CP+math.floor((sY/math.max(1,maxS))*math.max(0,cH-sbH))
@@ -906,29 +918,20 @@ function SyftLib:Open()
                         -- live-update section bg widths so they scale with window
                         local newColW=math.floor((lib.sw-CP*3)/2)
                         local newCX1=lib.px+CP; local newCX2=lib.px+CP*2+newColW
-                        local oldColW=math.floor((lib.sw-CP*3)/2)-math.floor((nw-lib.sw)/2)
-                        if oldColW~=newColW and lib._secItemRefs then
-                            local wRatio=newColW/math.max(1,oldColW)
-                            local midX=lib.px+lib.sw/2
+                        if lib._secItemRefs then
+                            local bCX1=lib._builtCX1; local bCX2=lib._builtCX2; local bCW=lib._builtColW
                             for _,ref in ipairs(lib._secItemRefs) do
-                                local isLeft=ref.startX<midX
-                                local relX=ref.startX-(isLeft and lib.px+CP or lib.px+CP*2+oldColW)
-                                local newCXbase=isLeft and newCX1 or newCX2
-                                local newX=newCXbase+relX
+                                local newBase=ref.isLeft and newCX1 or newCX2
                                 if ref.kind=="pos" then
                                     local d=ref.d
-                                    local oldW=d.Size.X
-                                    local newW=math.floor(oldW*wRatio)
-                                    d.Position=Vector2.new(newX,d.Position.Y)
-                                    if oldW>8 then d.Size=Vector2.new(newW,d.Size.Y) end
+                                    d.Position=Vector2.new(newBase+ref.relX,d.Position.Y)
+                                    if not ref.absW then
+                                        d.Size=Vector2.new(math.floor(ref.wFrac*newColW),d.Size.Y)
+                                    end
                                 elseif ref.kind=="line" then
                                     local d=ref.d
-                                    local isLeft2=ref.startX<midX
-                                    local newCXb=isLeft2 and newCX1 or newCX2
-                                    local fX=d.From.X-(isLeft2 and lib.px+CP or lib.px+CP*2+oldColW)
-                                    local tX=d.To.X-(isLeft2 and lib.px+CP or lib.px+CP*2+oldColW)
-                                    d.From=Vector2.new(newCXb+fX,d.From.Y)
-                                    d.To=Vector2.new(newCXb+tX,d.To.Y)
+                                    d.From=Vector2.new(newBase+ref.relFX,d.From.Y)
+                                    d.To=Vector2.new(newBase+ref.relTX,d.To.Y)
                                 end
                             end
                         end
@@ -1038,6 +1041,7 @@ function SyftLib:Open()
                 if srBg then srBg.Visible=v; srIcon.Visible=v; srIconL.Visible=v; srTxt.Visible=v end
                 if srCaret then srCaret.Visible=false end
                 for _,td in ipairs(tabDs) do td.td.Visible=v end
+                for _,l in ipairs(rgLines) do l.Visible=v end
                 if v then
                     if #secDs==0 then rebuildChrome() end
                     buildSecs()
