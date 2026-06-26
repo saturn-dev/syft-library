@@ -120,6 +120,7 @@ local THEMES={
         mauve=Color3.fromRGB(255,120,170),lavender=Color3.fromRGB(255,160,200),
     },
 }
+local themeCallbacks={}
 local function applyTheme(name)
     local t=THEMES[name] or THEMES.Default
     C.base=t.base; C.mantle=t.mantle; C.crust=t.crust
@@ -128,6 +129,8 @@ local function applyTheme(name)
     C.text=t.text; C.subtext1=t.subtext1; C.subtext0=t.subtext0
     C.mauve=t.mauve; C.lavender=t.lavender
     C.acc=C.mauve; C.brd=C.surface1; C.brd2=C.surface2
+    -- notify all open UIs to redraw immediately
+    for _,cb in ipairs(themeCallbacks) do pcall(cb) end
 end
 function SyftLib:SetTheme(name) applyTheme(name) end
 function SyftLib:GetThemeNames()
@@ -293,7 +296,7 @@ function SyftLib:Open()
                     else
                         li=li+1; local isLeft=(li%2==1)
                         local rawY=isLeft and c1H or c2H; local cx=isLeft and cx1 or cx2
-                        table.insert(layouts,{sec=sec,cx=cx,rawY=rawY,colW=colW,ch=ch})
+                        table.insert(layouts,{sec=sec,cx=cx,rawY=rawY,colW=colW,ch=ch,isLeft=isLeft})
                         if isLeft then c1H=c1H+ch+CP else c2H=c2H+ch+CP end
                     end
                 end
@@ -303,22 +306,24 @@ function SyftLib:Open()
         if sY>maxS then sY=maxS; lib.scrollY[lib.activeTab]=sY end
         local clipT=lib.py+TB+CP; local clipB=lib.py+lib.sh-CP
 
+        local secBgRefs={}  -- track section bg squares for live resize
         for _,L in ipairs(layouts) do
             local sec=L.sec; local cx=L.cx; local cy=baseY+L.rawY-sY; local colW2=L.colW; local ch=L.ch
             if cy+ch>=clipT and cy<=clipB then
-                mk("Square",{Filled=true,Color=C.mantle,Size=Vector2.new(colW2,ch),Position=Vector2.new(cx,cy),Corner=8,ZIndex=10,Visible=true})
-                mk("Square",{Filled=false,Color=C.brd,Size=Vector2.new(colW2,ch),Position=Vector2.new(cx,cy),Corner=8,Thickness=1,ZIndex=11,Visible=true})
-                mk("Square",{Filled=true,Color=C.surface0,Size=Vector2.new(colW2,28),Position=Vector2.new(cx,cy),Corner=8,ZIndex=11,Visible=true})
-                mk("Square",{Filled=true,Color=C.surface0,Size=Vector2.new(colW2-2,12),Position=Vector2.new(cx+1,cy+16),ZIndex=11,Visible=true})
-                mk("Square",{Filled=true,Color=C.brd,Size=Vector2.new(colW2,1),Position=Vector2.new(cx,cy+27),ZIndex=12,Visible=true})
+                local sBg =mk("Square",{Filled=true,Color=C.mantle,Size=Vector2.new(colW2,ch),Position=Vector2.new(cx,cy),Corner=8,ZIndex=10,Visible=true})
+                local sBrd=mk("Square",{Filled=false,Color=C.brd,Size=Vector2.new(colW2,ch),Position=Vector2.new(cx,cy),Corner=8,Thickness=1,ZIndex=11,Visible=true})
+                local sHdr=mk("Square",{Filled=true,Color=C.surface0,Size=Vector2.new(colW2,28),Position=Vector2.new(cx,cy),Corner=8,ZIndex=11,Visible=true})
+                local sHdrF=mk("Square",{Filled=true,Color=C.surface0,Size=Vector2.new(colW2-2,12),Position=Vector2.new(cx+1,cy+16),ZIndex=11,Visible=true})
+                local sHdrL=mk("Square",{Filled=true,Color=C.brd,Size=Vector2.new(colW2,1),Position=Vector2.new(cx,cy+27),ZIndex=12,Visible=true})
                 mk("Square",{Filled=true,Color=C.mauve,Size=Vector2.new(3,14),Position=Vector2.new(cx+1,cy+7),Corner=2,ZIndex=13,Visible=true})
                 mk("Text",{Text=sec.title,Size=FSS,Color=C.text,Font=FONTB,Position=Vector2.new(cx+PAD,cy+7),ZIndex=13,Visible=true})
+                table.insert(secBgRefs,{bg=sBg,brd=sBrd,hdr=sHdr,hdrF=sHdrF,hdrL=sHdrL,L=L})
                 -- perimeter glow: 24 short segments following rounded rect border
                 do
                     local scx=cx; local scy=cy; local scw=colW2; local sch=ch; local R=8
-                    local N=24
+                    local N=32
                     local gl={}
-                    for _=1,N do local l=mk("Line",{}); l.Thickness=1.5; l.ZIndex=9; l.Visible=false; gl[#gl+1]=l end
+                    for _=1,N do local l=mk("Line",{}); l.Thickness=2; l.ZIndex=9; l.Visible=false; gl[#gl+1]=l end
                     local sin=math.sin; local cos=math.cos; local pi=math.pi
                     local topLen=scw-2*R; local sideLen=sch-2*R; local cArc=0.5*pi*R
                     local perim=2*(topLen+sideLen)+4*cArc
@@ -349,14 +354,15 @@ function SyftLib:Open()
                         elseif dist==dR then focusT=(topLen+cArc+math.clamp(my2,scy+R,scy+sch-R)-scy-R)/perim
                         elseif dist==dB then focusT=(topLen+cArc+sideLen+cArc+(scx+scw-R-math.clamp(mx2,scx+R,scx+scw-R)))/perim
                         else focusT=(topLen+cArc+sideLen+cArc+topLen+cArc+scy+sch-R-math.clamp(my2,scy+R,scy+sch-R))/perim end
-                        local spread=0.3
+                        local spread=0.45
+                        local pulse=0.88+0.12*math.sin(tick()*3)
                         for i=1,N do
                             local t1=focusT+(-spread/2+(i-1)*(spread/N))
                             local t2=t1+spread/N
                             local x1,y1=pt(t1); local x2,y2=pt(t2)
-                            local frac=1-math.abs((i-0.5)/N-0.5)*2
+                            local frac=(1-math.abs((i-0.5)/N-0.5)*2)^0.7
                             gl[i].From=Vector2.new(x1,y1); gl[i].To=Vector2.new(x2,y2)
-                            gl[i].Color=C.mauve; gl[i].Transparency=baseA*frac; gl[i].Visible=true
+                            gl[i].Color=C.mauve; gl[i].Transparency=baseA*frac*pulse; gl[i].Visible=true
                         end
                     end)
                 end
@@ -751,6 +757,7 @@ function SyftLib:Open()
             end
         end
 
+        lib._secBgRefs=secBgRefs
         if totH>cH then
             local sbH=math.max(24,math.floor(cH*(cH/math.max(1,totH))))
             local sbY=lib.py+TB+CP+math.floor((sY/math.max(1,maxS))*math.max(0,cH-sbH))
@@ -764,6 +771,12 @@ function SyftLib:Open()
     end
 
     buildSecs()
+
+    -- register theme change callback so colors update instantly without tab switch
+    table.insert(themeCallbacks,function()
+        rebuildChrome()
+        buildSecs()
+    end)
 
     -- RESIZE GRIP drawings (3 diagonal lines at bottom-right corner)
     local MIN_SW=660; local MIN_SH=500
@@ -875,17 +888,26 @@ function SyftLib:Open()
                     if nw~=lib.sw or nh~=lib.sh then
                         lib.sw=nw; lib.sh=nh
                         cH=lib.sh-TB-CP*2
-                        -- only chrome update during drag -- no buildSecs to prevent flicker
                         rebuildChrome()
                         updateRGrip()
-                        -- shift existing secDs to keep them in place during drag
-                        -- (they'll be clipped by clipB but won't flicker)
+                        -- live-update section bg widths so they scale with window
+                        local newColW=math.floor((lib.sw-CP*3)/2)
+                        local newCX1=lib.px+CP; local newCX2=lib.px+CP*2+newColW
+                        if lib._secBgRefs then
+                            for _,ref in ipairs(lib._secBgRefs) do
+                                local newCX=ref.L.isLeft and newCX1 or newCX2
+                                ref.bg.Size=Vector2.new(newColW,ref.bg.Size.Y); ref.bg.Position=Vector2.new(newCX,ref.bg.Position.Y)
+                                ref.brd.Size=ref.bg.Size; ref.brd.Position=ref.bg.Position
+                                ref.hdr.Size=Vector2.new(newColW,28); ref.hdr.Position=Vector2.new(newCX,ref.hdr.Position.Y)
+                                ref.hdrF.Size=Vector2.new(newColW-2,12); ref.hdrF.Position=Vector2.new(newCX+1,ref.hdrF.Position.Y)
+                                ref.hdrL.Size=Vector2.new(newColW,1); ref.hdrL.Position=Vector2.new(newCX,ref.hdrL.Position.Y)
+                            end
+                        end
                     end
                 end
                 if not d then
                     if resizing then
                         resizing=false
-                        -- rebuild sections once on release
                         buildSecs()
                     end
                     -- update grip color on hover
@@ -963,26 +985,52 @@ function SyftLib:Open()
         end
     end)
 
-    -- TOGGLE KEY: RenderStepped for guaranteed per-frame polling
-    -- On hide: just mark invisible. On show: restore visibility (no rebuild needed).
+    -- TOGGLE KEY + TWEEN: fade in/out on show/hide
     local toggleKeyPrev=false
+    lib._tweenAlpha=lib.visible and 1 or 0
+    lib._tweenTarget=lib.visible and 1 or 0
     local RS=game:GetService("RunService")
     RS.RenderStepped:Connect(function()
+        -- smooth alpha tween
+        local dt=0.016
+        if lib._tweenAlpha~=lib._tweenTarget then
+            local spd=10
+            lib._tweenAlpha=lib._tweenAlpha+(lib._tweenTarget-lib._tweenAlpha)*(1-math.exp(-spd*dt))
+            if math.abs(lib._tweenAlpha-lib._tweenTarget)<0.01 then lib._tweenAlpha=lib._tweenTarget end
+            local a=lib._tweenAlpha
+            -- fade chrome drawings
+            winBg.Transparency=1-a; winBrd.Transparency=1-a
+            topBg.Transparency=1-a; topFill.Transparency=1-a; topBrd.Transparency=1-a
+            titTxt.Transparency=1-a; slideLine.Transparency=1-a
+            if srBg then srBg.Transparency=1-a; srIcon.Transparency=1-a; srIconL.Transparency=1-a; srTxt.Transparency=1-a end
+            for _,td in ipairs(tabDs) do td.td.Transparency=1-a end
+            for _,d2 in ipairs(secDs) do d2.Transparency=1-a end
+            for _,l in ipairs(rgLines) do l.Transparency=1-a end
+        end
+        -- toggle key
         if lib.toggleKey~=0 then
             local down=iskeypressed(lib.toggleKey)
             if down and not toggleKeyPrev then
                 lib.visible=not lib.visible
-                local v=lib.visible
-                winBg.Visible=v; winBrd.Visible=v; topBg.Visible=v; topFill.Visible=v
-                topBrd.Visible=v; titTxt.Visible=v; slideLine.Visible=v
-                if srBg then srBg.Visible=v; srIcon.Visible=v; srIconL.Visible=v; srTxt.Visible=v end
-                for _,td in ipairs(tabDs) do td.td.Visible=v end
-                -- show: rebuild cleanly. hide: hide all secDs.
-                if v then
+                lib._tweenTarget=lib.visible and 1 or 0
+                if lib.visible then
+                    -- make visible immediately, fade in via alpha
+                    winBg.Visible=true; winBrd.Visible=true; topBg.Visible=true; topFill.Visible=true
+                    topBrd.Visible=true; titTxt.Visible=true; slideLine.Visible=true
+                    if srBg then srBg.Visible=true; srIcon.Visible=true; srIconL.Visible=true; srTxt.Visible=true end
+                    for _,td in ipairs(tabDs) do td.td.Visible=true end
                     if #secDs==0 then rebuildChrome() end
                     buildSecs()
                 else
-                    for _,d2 in ipairs(secDs) do d2.Visible=false end
+                    -- hide after tween completes -- handled by alpha reaching 0
+                    spawn(function()
+                        while lib._tweenAlpha>0.01 do wait(0.016) end
+                        winBg.Visible=false; winBrd.Visible=false; topBg.Visible=false; topFill.Visible=false
+                        topBrd.Visible=false; titTxt.Visible=false; slideLine.Visible=false
+                        if srBg then srBg.Visible=false; srIcon.Visible=false; srIconL.Visible=false; srTxt.Visible=false end
+                        for _,td in ipairs(tabDs) do td.td.Visible=false end
+                        for _,d2 in ipairs(secDs) do d2.Visible=false end
+                    end)
                 end
             end
             toggleKeyPrev=down
