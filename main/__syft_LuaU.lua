@@ -962,7 +962,7 @@ function SyftLib:Open()
                     if lib.query~=lastQ then lastQ=lib.query; buildSecs() end
                     wd=d
                 else wd=false end
-            endhttps://github.com/saturn-dev/syft-library/blob/main/main/__syft_LuaU.lua
+            end
         end)
     end
 
