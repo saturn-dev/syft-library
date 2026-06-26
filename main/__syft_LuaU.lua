@@ -134,7 +134,7 @@ function SyftLib:Open()
     local topBrd=D("Square",{Filled=true,Color=C.brd,Size=Vector2.new(lib.sw,1),Position=Vector2.new(lib.px,lib.py+TB-1),ZIndex=7,Visible=true})
     local titTxt=D("Text",{Text=lib.title,Size=FS,Color=C.text,Font=FONTB,Position=Vector2.new(lib.px+14,lib.py+11),ZIndex=8,Visible=true})
 
-    local srW=148; local srBg,srBrd,srIcon,srIconL,srTxt
+    local srW=148; local srBg,srIcon,srIconL,srTxt
     if lib.doSearch then
         local sx=lib.px+tw(lib.title,FS)+26
         srBg  =D("Square",{Filled=true,Color=C.surface0,Size=Vector2.new(srW,22),Position=Vector2.new(sx,lib.py+8),Corner=6,ZIndex=7,Visible=true})
@@ -781,7 +781,7 @@ function SyftLib:Open()
                     srTxt.Position=Vector2.new(sx2+20,lib.py+12)
                     local d=ismouse1pressed()
                     if d and not wd then lib.sfocus=mOver(sx2,lib.py+8,srW,22) end
-                    srBrd.Color=lib.sfocus and C.mauve or C.brd; srBg.Color=lib.sfocus and C.surface1 or C.surface0
+                    srBg.Color=lib.sfocus and C.surface1 or C.surface0
                     local ic=lib.sfocus and C.mauve or C.overlay0; srIcon.Color=ic; srIconL.Color=ic
                     if lib.sfocus then
                         for kc=8,90 do
