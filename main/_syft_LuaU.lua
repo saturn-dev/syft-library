@@ -767,12 +767,15 @@ function SyftLib:Open()
         local builtCX1=lib.px+CP; local builtCX2=lib.px+CP*2+builtColW
         local secItemRefs={}
         for _,d in ipairs(secDsPos) do
-            local ax=d.Position.X
+            local ok,ax=pcall(function() return d.Position.X end)
+            if not ok then continue end
             local isLeft=(ax<lib.px+lib.sw/2)
             local base=isLeft and builtCX1 or builtCX2
             local relX=ax-base
-            local wFrac=d.Size.X/math.max(1,builtColW)
-            table.insert(secItemRefs,{kind="pos",d=d,isLeft=isLeft,relX=relX,wFrac=wFrac,absW=(d.Size.X<=8)})
+            local okW,sw2=pcall(function() return d.Size.X end)
+            local wFrac=okW and sw2/math.max(1,builtColW) or 0
+            local isAbs=(not okW) or (okW and sw2<=8)
+            table.insert(secItemRefs,{kind="pos",d=d,isLeft=isLeft,relX=relX,wFrac=wFrac,absW=isAbs})
         end
         for _,d in ipairs(secDsLine) do
             local ax=d.From.X
