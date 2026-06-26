@@ -198,42 +198,52 @@ function SyftLib:Open()
         srTxt =D("Text",{Text="search...",Size=FSX,Color=C.overlay0,Font=FONT,Position=Vector2.new(sx+20,lib.py+12),ZIndex=9,Visible=true})
     end
 
-    local TITLEW=tw(lib.title,FS)+26+(lib.doSearch and srW+14 or 0)
+    local MAX_TAB_W=120  -- max width per tab
+    local FIXED_LEFT=tw(lib.title,FS)+26+(lib.doSearch and srW+14 or 0)
     local numT=#lib.tnames
-    local eTW=math.floor((lib.sw-TITLEW-20)/numT)
+    -- TITLEW and eTW are recomputed dynamically so tabs right-align as window grows
+    local TITLEW=FIXED_LEFT
+    local eTW=math.min(MAX_TAB_W,math.floor((lib.sw-FIXED_LEFT-20)/numT))
 
     local tabDs={}
     for i,nm in ipairs(lib.tnames) do
         local isA=(i==lib.activeTab)
+        local tabsStartX=lib.px+lib.sw-numT*eTW-10
         local relX=(i-1)*eTW+math.floor(eTW/2-tw(nm,FSX)/2)
         local td=D("Text",{Text=nm,Size=FSX,Color=isA and C.mauve or C.overlay1,Font=isA and FONTB or FONT,
-            Position=Vector2.new(lib.px+TITLEW+relX,lib.py+11),ZIndex=9,Visible=true})
-        table.insert(tabDs,{td=td,relX=relX})
+            Position=Vector2.new(tabsStartX+relX,lib.py+11),ZIndex=9,Visible=true})
+        table.insert(tabDs,{td=td,nm=nm})
     end
 
     local slideRelX=(lib.activeTab-1)*eTW+8
     local slideRelXCur=slideRelX
     local slideLine=D("Square",{Filled=true,Color=C.mauve,Size=Vector2.new(eTW-16,2),
-        Position=Vector2.new(lib.px+TITLEW+slideRelXCur,lib.py+TB-3),ZIndex=10,Visible=true})
+        Position=Vector2.new(lib.px+lib.sw-numT*eTW-10+slideRelXCur,lib.py+TB-3),ZIndex=10,Visible=true})
 
     lib.activeTab=1  -- always start on first tab
     local function rebuildChrome()
+        -- recompute eTW so tabs right-align as window width changes
+        eTW=math.min(MAX_TAB_W,math.floor((lib.sw-FIXED_LEFT-20)/numT))
+        local tabsStartX=lib.px+lib.sw-numT*eTW-10
         winBg.Position=Vector2.new(lib.px,lib.py); winBg.Size=Vector2.new(lib.sw,lib.sh); winBg.Color=C.base
         winBrd.Position=Vector2.new(lib.px,lib.py); winBrd.Size=Vector2.new(lib.sw,lib.sh); winBrd.Color=C.brd
         topBg.Position=Vector2.new(lib.px,lib.py); topBg.Size=Vector2.new(lib.sw,TB); topBg.Color=C.mantle
         topFill.Position=Vector2.new(lib.px,lib.py+TB-10); topFill.Size=Vector2.new(lib.sw,10); topFill.Color=C.mantle
         topBrd.Position=Vector2.new(lib.px,lib.py+TB-1); topBrd.Size=Vector2.new(lib.sw,1); topBrd.Color=C.brd
         titTxt.Position=Vector2.new(lib.px+14,lib.py+11); titTxt.Color=C.text
-        slideLine.Color=C.acc; slideLine.Position=Vector2.new(lib.px+TITLEW+slideRelXCur,lib.py+TB-3); slideLine.Size=Vector2.new(eTW-16,2)
+        slideLine.Color=C.acc
+        slideLine.Position=Vector2.new(tabsStartX+slideRelXCur,lib.py+TB-3)
+        slideLine.Size=Vector2.new(eTW-16,2)
         if srBg then
             local sx2=lib.px+tw(lib.title,FS)+26
             srBg.Position=Vector2.new(sx2,lib.py+8); srBg.Color=C.surface0
-                        srIcon.Position=Vector2.new(sx2+10,lib.py+19); srIcon.Color=C.overlay0
+            srIcon.Position=Vector2.new(sx2+10,lib.py+19); srIcon.Color=C.overlay0
             srIconL.From=Vector2.new(sx2+13,lib.py+22); srIconL.To=Vector2.new(sx2+16,lib.py+25); srIconL.Color=C.overlay0
             srTxt.Position=Vector2.new(sx2+20,lib.py+12); srTxt.Color=C.overlay0
         end
         for i,td in ipairs(tabDs) do
-            td.td.Position=Vector2.new(lib.px+TITLEW+td.relX,lib.py+11)
+            local relX=(i-1)*eTW+math.floor(eTW/2-tw(td.nm,FSX)/2)
+            td.td.Position=Vector2.new(tabsStartX+relX,lib.py+11)
             td.td.Color=(i==lib.activeTab) and C.acc or C.overlay1
         end
     end
@@ -780,9 +790,9 @@ function SyftLib:Open()
             if lib.visible then
                 local d=ismouse1pressed()
                 if d and not wd then
-                    local tabStartX=lib.px+TITLEW
+                    local tabsStartX2=lib.px+lib.sw-numT*eTW-10
                     for i=1,numT do
-                        local tx=tabStartX+(i-1)*eTW
+                        local tx=tabsStartX2+(i-1)*eTW
                         if Mouse.X>=tx and Mouse.X<tx+eTW and Mouse.Y>=lib.py and Mouse.Y<=lib.py+TB then
                             if lib.activeTab~=i then
                                 lib.activeTab=i; openDD=nil
@@ -798,7 +808,8 @@ function SyftLib:Open()
                     end
                 end
                 slideRelXCur=lN(slideRelXCur,slideRelX,0.22)
-                slideLine.Position=Vector2.new(lib.px+TITLEW+slideRelXCur,lib.py+TB-3)
+                local tabsStartX3=lib.px+lib.sw-numT*eTW-10
+                slideLine.Position=Vector2.new(tabsStartX3+slideRelXCur,lib.py+TB-3)
                 wd=d
             else wd=false end
         end
@@ -814,7 +825,8 @@ function SyftLib:Open()
                 local d=ismouse1pressed()
                 local mx=Mouse.X; local my=Mouse.Y
                 if d and not wd then
-                    if mx>=lib.px and mx<lib.px+TITLEW and my>=lib.py and my<=lib.py+TB then
+                    local tabsStartXD=lib.px+lib.sw-numT*eTW-10
+                    if mx>=lib.px and mx<tabsStartXD and my>=lib.py and my<=lib.py+TB then
                         drag=true; lib.dragging=true
                         startMX=mx; startMY=my; startPX=lib.px; startPY=lib.py
                         lastPX=lib.px; lastPY=lib.py
@@ -863,13 +875,19 @@ function SyftLib:Open()
                     if nw~=lib.sw or nh~=lib.sh then
                         lib.sw=nw; lib.sh=nh
                         cH=lib.sh-TB-CP*2
+                        -- only chrome update during drag -- no buildSecs to prevent flicker
                         rebuildChrome()
-                        buildSecs()
                         updateRGrip()
+                        -- shift existing secDs to keep them in place during drag
+                        -- (they'll be clipped by clipB but won't flicker)
                     end
                 end
                 if not d then
-                    if resizing then resizing=false end
+                    if resizing then
+                        resizing=false
+                        -- rebuild sections once on release
+                        buildSecs()
+                    end
                     -- update grip color on hover
                     local gripX2=lib.px+lib.sw-20; local gripY2=lib.py+lib.sh-20
                     local hov=mOver(gripX2,gripY2,20,20)
